@@ -7,3 +7,6 @@ __pycache__/
 node_modules/
 .github/
 keys.env
+Lib
+Scripts
+pyvenv.cfg
