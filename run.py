@@ -157,7 +157,7 @@ def main():
 
     simulate_loading_spinner()
     
-    simulate_typing(ascii_art, delay=0.001) 
+    simulate_typing(ascii_art, delay=0.001)	 
     
     # Initialize history log
     history = []
