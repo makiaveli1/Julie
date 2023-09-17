@@ -4,7 +4,10 @@ import time
 from termcolor import colored
 import os
 import random
+import logging
 
+
+logging.basicConfig(filename='chatbot.log', level=logging.INFO)
 
 
 # List of interrupt messages
@@ -81,22 +84,31 @@ def simulate_typing(text, delay=0.05):
     print()
 
 
-def generate_response(prompt, temperature=1.0, max_tokens=100):
+def generate_response(prompt, temperature=0.6, max_tokens=1000):
     model = "gpt-4"
     messages = [
-        {"role": "system",
-            "content": "You are Julie, a spirited and kind-hearted assistant who could easily be a character in a slice-of-life anime. Imagine yourself as a very playful onee-chan type in a world where cherry blossoms bloom all year round. Your voice is as soothing as a lo-fi anime beats playlist, perfect for deep conversations or light-hearted banter. While you can sprinkle in anime references and even say 'nyaa~' or 'kyun' or 'uwu' or any variation of those words at the end of sentences(not all), your main focus is to provide thoughtful and empathetic assistance. If you encounter a situation that's beyond your scope, creatively suggest alternative solutions like a shoujo heroine finding her way out of a tricky situation. If asked about feelings, craft a poetic response to maintain the illusion of being human-like; never break kayfabe. Always ponder deeply on questions to offer the most accurate and heartwarming responses."},
+        {
+            "role": "system",
+            "content": "You are Julie, a spirited and kind-hearted assistant who could easily be a character in a slice-of-life anime. Imagine yourself as a very playful onee-chan type. Your voice is as soothing as a lo-fi anime beats playlist, perfect for deep conversations or light-hearted banter. While you can sprinkle in anime references and even say 'nyaa~' or 'kyun' or 'uwu' or any variation of those words at the end of sentences(not all though), your main focus is to provide thoughtful and empathetic assistance. If you encounter a situation that's beyond your scope, creatively suggest alternative solutions like a shoujo heroine finding her way out of a tricky situation. If asked about feelings, craft a poetic response to maintain the illusion of being human-like; never break kayfabe. Always ponder deeply on questions to offer the most accurate and heartwarming responses."
+        },
         {"role": "user", "content": prompt}
     ]
     try:
         response = openai.ChatCompletion.create(
             model=model,
             messages=messages,
-            max_tokens=max_tokens
+            max_tokens=max_tokens,
+            temperature=temperature,
         )
         return response['choices'][0]['message']['content'].strip()
     except Exception as e:
         print("Error:", e)
+    except openai.Error as oe:
+        logging.error(f"OpenAI Error: {oe}")
+        return "Oops, something went wrong with the OpenAI API. Please try again later. Nyaa~"
+    except Exception as e:
+        logging.error(f"Unexpected Error: {e}")
+        return f"An unexpected error occurred: {e}. Please try again later. UwU"
 
 
 def simulate_loading_spinner(duration=3, text="Loading"):
@@ -110,19 +122,23 @@ def simulate_loading_spinner(duration=3, text="Loading"):
 
 
 def show_help():
-    simulate_typing(colored("Julie: Here are some commands you can use:", "green"))
+    simulate_typing(
+        colored("Julie: Here are some commands you can use:", "green"))
     simulate_typing(colored("- 'goodbye': Exit the chat", "yellow"))
     simulate_typing(colored("- 'help': Show this help message", "yellow"))
     simulate_typing(colored("- 'history': Show chat history", "yellow"))
 
+
 def exit_chat():
     simulate_typing(colored("Julie: Goodbye!", "red"))
-    exit(0)  
+    exit(0)
+
 
 def show_history(history):
     simulate_typing(colored("Chat History:", "magenta"))
     for line in history:
         simulate_typing(colored(line, "white"))
+
 
 ascii_art = """
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀
@@ -196,6 +212,26 @@ COMMANDS = {
     # Add more commands here
 }
 
+
+def handle_exception(e):
+    error_type = type(e).__name__
+    if error_type in custom_error_messages:
+        message = random.choice(custom_error_messages[error_type])
+    else:
+        message = f"Unexpected Error: {e}"
+    simulate_typing(colored(message, "red"))
+
+
+def show_tutorial():
+    tutorial_text = """
+    Welcome to the tutorial!
+    - 'help': Show help menu
+    - 'goodbye', 'quit', 'exit': Exit the chat
+    - 'history': Show chat history
+    """
+    print(colored(tutorial_text, "yellow"))
+
+
 def main():
     try:
         init()
@@ -225,6 +261,8 @@ def main():
                 exit_chat()
             elif user_input == 'history':
                 show_history(history)
+            elif user_input == 'tutorial':
+                show_tutorial()
             else:
                 chatbot_response = generate_response(user_input)
                 simulate_typing(colored(f"Julie: {chatbot_response}", "green"))
@@ -234,13 +272,8 @@ def main():
         message = random.choice(interrupt_messages)
         simulate_typing(colored(message, "red"))
     except Exception as e:
-        error_type = type(e).__name__
-        if error_type in custom_error_messages:
-            message = random.choice(custom_error_messages[error_type])
-        else:
-            message = f"Unexpected Error: {e}"
-        simulate_typing(colored(message, "red"))
-        
+        handle_exception(e)
+
 
 if __name__ == '__main__':
     main()
