@@ -5,42 +5,13 @@ from termcolor import colored
 import os
 import random
 import requests
-import pygame
 import logging
+from google.oauth2.service_account import Credentials
+import gspread
 
 
 logging.basicConfig(filename='chatbot.log', level=logging.INFO)
 
-
-
-print("Debug: API_KEY from env:", os.getenv("PLAYHT_API_KEY"))
-print("Debug: USER_ID from env:", os.getenv("PLAYHT_USER_ID"))
-load_dotenv("keys.env")
-API_KEY = os.getenv("PLAYHT_API_KEY")
-USER_ID = 'mKrsF9yg6Vd5ZYaJsHbB38DXIsc2'
-
-headers = {
-    'Authorization': f'Bearer {API_KEY}',
-    'Content-Type': 'application/json',
-    'X-USER-ID': USER_ID,
-    'accept': 'text/event-stream'
-}
-
-payload = {
-    "text": "Hello from the ultra-realistic voice.",
-    "voice": "nova",
-    "quality": "medium",
-    "output_format": "mp3",
-    "speed": 1,
-    "sample_rate": 24000
-}
-
-print("Headers:", headers)
-print("Data:", payload)
-
-response = requests.post('https://play.ht/api/v2/tts', headers=headers, json=payload)
-print(response.text)
-print(response.status_code)
 
 
 # List of interrupt messages
@@ -98,36 +69,11 @@ custom_error_messages = {
 }
 
 
-def init():
-    load_dotenv("keys.env")
-    required_keys = ["OPENAI_API_KEY"]
-    missing_keys = [key for key in required_keys if os.getenv(key) is None]
-
-    if missing_keys:
-        raise Exception(f"{', '.join(missing_keys)} not found")
-    else:
-        print("All required keys found")
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-
-
 def simulate_typing(text, delay=0.05):
     for char in text:
         print(char, end='', flush=True)
         time.sleep(delay)
     print()
-
-def generate_audio(text, voice='nova', delay=0.05):
-    payload = {
-        'text': text,
-        'voice': voice,
-        'delay': delay
-    }
-    response = requests.post('https://play.ht/api/v2/tts', headers=headers, json=payload)
-    if response.status_code == 200:
-        audio_url = response.json()['payload']['url']
-        return audio_url
-    else:
-        return "Failed to generate audio."
     
     
 def generate_response(prompt, temperature=0.6, max_tokens=1000):
@@ -275,14 +221,41 @@ def show_tutorial():
     - 'goodbye', 'quit', 'exit': Exit the chat
     - 'history': Show chat history
     """
-    print(colored(tutorial_text, "yellow"))
+    simulate_typing(colored(tutorial_text, "yellow"))
+
+
+def init_gspread():
+    # Load the credentials
+    gc = gspread.service_account(filename='creds.json')
+    
+    # Open the Google Sheet by its name (or URL, or ID)
+    sh = gc.open("Julie-history")
+    
+    # Choose a worksheet if you have more than one (worksheets are 0-indexed)
+    worksheet = sh.get_worksheet(0)
+    
+    return worksheet
+
+
+def init():
+    load_dotenv("keys.env")
+    worksheet = init_gspread()
+    simulate_loading_spinner()
+    simulate_typing(ascii_art, delay=0.001)
+    required_keys = ["OPENAI_API_KEY"]
+    missing_keys = [key for key in required_keys if os.getenv(key) is None]
+
+    if missing_keys:
+        raise Exception(f"{', '.join(missing_keys)} not found")
+    else:
+        print("All required keys found")
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 
 def main():
     try:
         init()
-        simulate_loading_spinner()
-        simulate_typing(ascii_art, delay=0.001)
 
         # Initialize history log
         history = []
@@ -310,7 +283,7 @@ def main():
             elif user_input == 'tutorial':
                 show_tutorial()
             else:
-                chatbot_response = generate_response(user_input)
+                chatbot_response = generate_response(user_input)              
                 simulate_typing(colored(f"Julie: {chatbot_response}", "green"))
                 history.append(f"Julie: {chatbot_response}")
 
@@ -318,7 +291,8 @@ def main():
         message = random.choice(interrupt_messages)
         simulate_typing(colored(message, "red"))
     except Exception as e:
-        handle_exception(e)
+        print(f"Unexpected Error: {e}")
+
 
 
 if __name__ == '__main__':
