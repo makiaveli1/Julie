@@ -5,23 +5,43 @@ from termcolor import colored
 import os
 import random
 import requests
+import pygame
 import logging
 
 
 logging.basicConfig(filename='chatbot.log', level=logging.INFO)
 
 
+
+print("Debug: API_KEY from env:", os.getenv("PLAYHT_API_KEY"))
+print("Debug: USER_ID from env:", os.getenv("PLAYHT_USER_ID"))
+load_dotenv("keys.env")
 API_KEY = os.getenv("PLAYHT_API_KEY")
-headers = {'Authorization': API_KEY}
-data = {
-    'text': 'Hello, world!',
-    'voice': 'Joanna'
+USER_ID = 'mKrsF9yg6Vd5ZYaJsHbB38DXIsc2'
+
+headers = {
+    'Authorization': f'Bearer {API_KEY}',
+    'Content-Type': 'application/json',
+    'X-USER-ID': USER_ID,
+    'accept': 'text/event-stream'
 }
 
-response = requests.post('https://api.play.ht/api/v1/speech', headers=headers, json=data)
+payload = {
+    "text": "Hello from the ultra-realistic voice.",
+    "voice": "nova",
+    "quality": "medium",
+    "output_format": "mp3",
+    "speed": 1,
+    "sample_rate": 24000
+}
 
+print("Headers:", headers)
+print("Data:", payload)
 
-audio_url = response.json()['url']
+response = requests.post('https://play.ht/api/v2/tts', headers=headers, json=payload)
+print(response.text)
+print(response.status_code)
+
 
 # List of interrupt messages
 interrupt_messages = [
@@ -96,7 +116,20 @@ def simulate_typing(text, delay=0.05):
         time.sleep(delay)
     print()
 
-
+def generate_audio(text, voice='nova', delay=0.05):
+    payload = {
+        'text': text,
+        'voice': voice,
+        'delay': delay
+    }
+    response = requests.post('https://play.ht/api/v2/tts', headers=headers, json=payload)
+    if response.status_code == 200:
+        audio_url = response.json()['payload']['url']
+        return audio_url
+    else:
+        return "Failed to generate audio."
+    
+    
 def generate_response(prompt, temperature=0.6, max_tokens=1000):
     model = "gpt-4"
     messages = [
