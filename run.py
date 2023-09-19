@@ -8,10 +8,11 @@ import requests
 import logging
 from google.oauth2.service_account import Credentials
 import gspread
+import uuid
+from datetime import datetime
 
 
 logging.basicConfig(filename='chatbot.log', level=logging.INFO)
-
 
 
 # List of interrupt messages
@@ -74,8 +75,8 @@ def simulate_typing(text, delay=0.05):
         print(char, end='', flush=True)
         time.sleep(delay)
     print()
-    
-    
+
+
 def generate_response(prompt, temperature=0.6, max_tokens=1000):
     model = "gpt-4"
     messages = [
@@ -224,18 +225,52 @@ def show_tutorial():
     simulate_typing(colored(tutorial_text, "yellow"))
 
 
-def init_gspread():
-    # Load the credentials
-    gc = gspread.service_account(filename='creds.json')
-    
-    # Open the Google Sheet by its name (or URL, or ID)
-    sh = gc.open("Julie-history")
-    
-    # Choose a worksheet if you have more than one (worksheets are 0-indexed)
-    worksheet = sh.get_worksheet(0)
-    
-    return worksheet
+def generate_unique_id():
+    return str(uuid.uuid4())
 
+# Initialize Google Sheets and create 'User' worksheet if it doesn't exist
+def init_gspread():
+    gc = gspread.service_account(filename='creds.json')
+    sh = gc.open('Julie-history')
+    try:
+        user_worksheet = sh.worksheet('User')
+    except:
+        user_worksheet = sh.add_worksheet(title='User', rows='100', cols='20')
+    return sh, user_worksheet
+
+# Register user and create new worksheet for them
+def register_user(sh, user_id, session_data):
+    user_worksheet = sh.worksheet('User')
+    user_worksheet.append_row([user_id, session_data])
+    new_worksheet = sh.add_worksheet(title=f'User_{user_id}', rows='100', cols='20')
+    return new_worksheet
+
+# Reading a cell (A1 notation)
+def read_cell(worksheet, cell_name):
+    return worksheet.acell(cell_name).value
+
+# Writing to a cell (A1 notation)
+def write_cell(worksheet, cell_name, value):
+    worksheet.update(cell_name, value)
+
+# Appending a row
+def append_row(worksheet, row_values):
+    worksheet.append_row(row_values)
+    
+
+def capture_session_data(user_settings):
+    opt_status = input("Do you consent to data storage for improving service quality? (yes/no): ").strip().lower()
+    session_data = {
+        'start_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'user_settings': user_settings,
+        'opt_in_status': opt_status == 'yes'
+    }
+    return str(session_data)
+
+# Log interactions between user and chatbot
+def log_interaction(new_worksheet, user_message, bot_response):
+    interaction_data = [user_message, bot_response]
+    append_row(new_worksheet, interaction_data)
 
 def init():
     load_dotenv("keys.env")
@@ -257,6 +292,19 @@ def main():
     try:
         init()
 
+        # Initialize Google Sheets
+        sh, user_worksheet = init_gspread()
+
+        # Generate Unique User ID
+        user_id = generate_unique_id()
+
+        # Capture Session Data
+        user_settings = "some_user_settings"  # Replace with actual user settings
+        session_data = capture_session_data(user_settings)
+
+        # Register User (or get existing user worksheet)
+        new_worksheet = register_user(sh, user_id, session_data)
+
         # Initialize history log
         history = []
 
@@ -270,29 +318,32 @@ def main():
                 simulate_typing(
                     colored("Invalid color choice. Please try again.", "red"))
 
-        while True:
-            user_input = input(colored("You: ", user_color)).lower()
-            history.append(f"You: {user_input}")
+            while True:
+                user_input = input(colored("You: ", user_color)).lower()
+                history.append(f"You: {user_input}")
 
-            if user_input == 'help':
-                show_help()
-            elif user_input in ["goodbye", "quit", "exit"]:
-                exit_chat()
-            elif user_input == 'history':
-                show_history(history)
-            elif user_input == 'tutorial':
-                show_tutorial()
-            else:
-                chatbot_response = generate_response(user_input)              
-                simulate_typing(colored(f"Julie: {chatbot_response}", "green"))
-                history.append(f"Julie: {chatbot_response}")
+                if user_input == 'help':
+                    show_help()
+                elif user_input in ["goodbye", "quit", "exit"]:
+                    exit_chat()
+                elif user_input == 'history':
+                    show_history(history)
+                elif user_input == 'tutorial':
+                    show_tutorial()
+                else:
+                    chatbot_response = generate_response(user_input)
+                    simulate_typing(colored(f"Julie: {chatbot_response}", "green"))
+                    history.append(f"Julie: {chatbot_response}")
+                    
+                    # Log user interaction conditionally based on opt-in/opt-out status
+                    if session_data['opt_in_status']:
+                        log_interaction(new_worksheet, f"You: {user_input}", f"Julie: {chatbot_response}")
 
     except KeyboardInterrupt:
         message = random.choice(interrupt_messages)
         simulate_typing(colored(message, "red"))
     except Exception as e:
         print(f"Unexpected Error: {e}")
-
 
 
 if __name__ == '__main__':
