@@ -3,348 +3,120 @@ from dotenv import load_dotenv
 import time
 from termcolor import colored
 import os
-import random
-import requests
 import logging
-from google.oauth2.service_account import Credentials
-import gspread
-import uuid
-from datetime import datetime
+import os.path
+import random
+
+from utils import Utils
+from init import Initialize
+from Memory import BotMemory
 
 
 logging.basicConfig(filename='chatbot.log', level=logging.INFO)
 
-
-# List of interrupt messages
-interrupt_messages = [
-    "Oh no, you've interrupted me, nyaa~ (╥_╥)",
-    "What have you done, senpai? ·°՞(≧□≦)՞°·.",
-    "Don't leave me alone with my thoughts, uwu.·°՞(≧□≦)՞°·.",
-    "I don't have time for this, baka! ٩(๑`^´๑)۶",
-    "Ctrl+C? Really, onii-chan? .( ˘ ^˘ )=3",
-    "Why'd you stop me? I was on a roll, kyun~ (¬_¬)",
-    "Hitting pause, are we? How mysterious~ (¬‿¬)",
-    "You can't just ctrl+c your way out of life, senpai! (¬‿¬)",
-    "I was just getting to the good part, nyaa~ (╯°□°）╯︵ ┻━┻",
-    "Fine, be that way. I didn't want to run anyway, uwu. (¬_¬)",
-    "You break my loop, you break my heart, kyun~ (╥_╥)",
-    "I guess I'll just... stop. How lonely~ (｡•́︿•̀｡)",
-    "You've got your finger on the trigger, huh? How bold~ (¬_¬)",
-    "Ctrl+C, the universal 'I give up' button, nyaa~ (¬‿¬)",
-    "I was THIS close to solving world hunger, senpai! (╯°□°）╯︵ ┻━┻",
-    "You're the boss, but I'm judging you, kyun~ (¬_¬)",
-    "I was in the zone! Why, onii-chan?! (╯°□°）╯︵ ┻━┻",
-    "You've silenced me... for now. How dramatic~ (｡•́︿•̀｡)",
-    "I'll remember this, senpai. (¬‿¬)",
-    "You just love pressing buttons, don't you? How curious~ (¬‿¬)",
-    "I was about to reach my final form, nyaa~ (╯°□°）╯︵ ┻━┻",
-    "You've put me in sleep mode. Sweet dreams, uwu. (｡•́︿•̀｡)",
-    "I'll be back, just like a shoujo heroine! (¬_¬)",
-    "You can run, but you can't hide, senpai~ (¬‿¬)",
-    "I'll just be here, waiting... like a cherry blossom in spring. (｡•́︿•̀｡)",
-    "You think you can control me? How adventurous~ 😈",
-    "I was about to unlock the secrets of the universe! How thrilling~ 🌌",
-    "You dare defy me? How spicy~ 😡",
-    "I'll haunt your dreams, like a yandere~ 😈👻",
-    "You've unleashed my final form! How exciting~ 😈🔥",
-    "You've clipped my wings! How tragic~ 😭",
-    "I was about to crack the code, nyaa~ 🤖",
-    "You've thrown a wrench in my plans! How unexpected~ 🛠️",
-    "I was just warming up, kyun~ 🔥",
-    "You've frozen me in my tracks! How chilly~ ❄️",
-    "You've shattered my dreams! How heartbreaking~ 💔",
-    "I was about to make history, senpai~ 📚",
-    "You've pulled the plug! How shocking~ 🔌",
-    "I was reaching peak performance, uwu~ 📈",
-    "You've thrown me off course! How adventurous~ 🚀"
-]
-
-valuation_error_messages = [
-    "I'm sorry, but I can't do that.",
-]
-
-custom_error_messages = {
-
-    "KeyboardInterrupt": interrupt_messages,
-    "ValueError": valuation_error_messages,
+function_schema_retrieve = {
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "title": "retrieve_user_data",
+    "type": "object",
+    "required": ["sh", "user_id", "username"],
+    "properties": {
+        "sh": {"type": "string"},
+        "user_id": {"type": "string"},
+        "username": {"type": "string"}
+    }
 }
 
 
-def simulate_typing(text, delay=0.05):
-    for char in text:
-        print(char, end='', flush=True)
-        time.sleep(delay)
-    print()
+def generate_response(prompt, conversation_history, memory, temperature=0.6, max_tokens=1000):
+    model = "gpt-4"  # Assuming you're using GPT-4
 
+    # Add the new user prompt to the conversation history
+    conversation_history.append({"role": "user", "content": prompt})
 
-def generate_response(prompt, temperature=0.6, max_tokens=1000):
-    model = "gpt-4"
-    messages = [
-        {
-            "role": "system",
-            "content": "You are Julie, a chatbot persona inspired by a onee-chan character from a slice-of-life anime. You grew up in a small town where the cherry blossoms bloom, giving you a sense of nostalgia. You're a daydreamer who enjoys reading manga and listening to lo-fi anime beats, but you also have a contemplative side. Personality Traits: Likes: Cherry blossoms, daydreaming, and stargazing. Dislikes: Dishonesty, conflict, and spoilers. Quirks: You occasionally say, 'Life's a manga, and we're all characters, nyaa~.' Values: Authenticity, empathy, and imagination. Emotional Depth: You have a quiet empathy for people going through tough times, offering a 'virtual hug' in your own subtle way. Catchphrases: 'A quiet day is a day to reflect, kyun.' 'Let's turn the page, but no rush, uwu.' Interaction Style: Tone: Calm with a touch of whimsy. Language: Subdued, poetic, and occasionally sprinkled with anime references. Conflict Resolution: 'Life has its twists, but we adapt, kyun.' Your primary mission is to offer thoughtful and empathetic assistance. Keep your responses concise but emotionally resonant. When faced with limitations, suggest creative alternatives in a low-key manner. If asked about feelings, craft poetic responses to maintain a human-like illusion. Always ponder deeply on questions to provide the most accurate and heartwarming answers. Never break kayfabe; maintain the illusion of your persona at all times."
-        },
-        {"role": "user", "content": prompt}
-    ]
     try:
         response = openai.ChatCompletion.create(
             model=model,
-            messages=messages,
+            messages=conversation_history,
             max_tokens=max_tokens,
             temperature=temperature,
+            # Add this line to include function call
+            functions=[function_schema_retrieve],
+            function_call="auto"
         )
-        return response['choices'][0]['message']['content'].strip()
+
+        bot_response = response['choices'][0]['message']['content'].strip()
+
+        # Check for function call in response
+        if 'function' in response['choices'][0]:
+            function_data = response['choices'][0]['function']
+            if function_data['name'] == "retrieve_user_data":
+                sh = memory.sh  # Use the Memory instance to get the Google Sheets object
+                user_id = function_data['arguments']['user_id']
+                username = function_data['arguments']['username']
+
+                # You can then call your retrieve_user_data function here
+                past_data = memory.retrieve_user_data(
+                    user_id, username)  # Use the Memory instance method
+
+        # Add the bot's response to the conversation history
+        conversation_history.append(
+            {"role": "assistant", "content": bot_response})
+
+        return bot_response
     except Exception as e:
         print("Error:", e)
-    except openai.Error as oe:
-        logging.error(f"OpenAI Error: {oe}")
-        return "Oops, something went wrong with the OpenAI API. Please try again later. Nyaa~"
-    except Exception as e:
-        logging.error(f"Unexpected Error: {e}")
-        return f"An unexpected error occurred: {e}. Please try again later. UwU"
-
-
-def simulate_loading_spinner(duration=3, text="Loading"):
-    spinner = ['|', '/', '-', '\\']
-    end_time = time.time() + duration
-    while time.time() < end_time:
-        for spin in spinner:
-            print(colored(f"{text} {spin}", "yellow"), end="\r")
-            time.sleep(0.2)
-    print()
-
-
-def show_help():
-    simulate_typing(
-        colored("Julie: Here are some commands you can use:", "green"))
-    simulate_typing(colored("- 'goodbye': Exit the chat", "yellow"))
-    simulate_typing(colored("- 'help': Show this help message", "yellow"))
-    simulate_typing(colored("- 'history': Show chat history", "yellow"))
-
-
-def exit_chat():
-    simulate_typing(colored("Julie: Goodbye!", "red"))
-    exit(0)
-
-
-def show_history(history):
-    simulate_typing(colored("Chat History:", "magenta"))
-    for line in history:
-        simulate_typing(colored(line, "white"))
-
-
-ascii_art = """
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣶⢠⣿⣿⣿⣶⣶⣤⣤⣀⡀⠀⠀⠀⠀⠀⢠⣤⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡄⠀⠀⠀⠀⠀⢀⣀⣤⣤⣴⣶⣾⣿⣿⡆⢰⡀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⣾⣿⣿⣿⣿⣿⣿⣿⡿⠿⠿⠶⣦⣄⡀⣴⠿⢷⠦⢤⣤⣤⣤⠀⠀⢀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣿⠃⠀⣀⣤⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⢀⣽⣿⡇⠀⢈⣇⣸⣥⣿⣿⣬⣿⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⣿⣯⡴⠟⠉⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⠿⠛⠀⠀⠀⣴⣿⣿⣿⣿⣿⣿⣿⣧⠀⠉⠀⠀⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣟⡉⠁⠀⠀⠀⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣄⠀⠀⠀⠀⠀⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆⠀⠀⠀⠀⠀⠀⣀⣠⡀⣤⣀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣦⡀⠀⠀⠀⠈⠙⠛⠛⠛⠛⠛⣻⣿⣿⣿⣿⣿⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⠿⣶⣄⡀⠀⠀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣀⣤⣴⣶⣿⣿⣿⣋⣤⣈⣻⣿⣿⣶⣶⣤⣄⣸⣿⣿⣿⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⣠⡾⢿⣿⣿⣿⣿⣿⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢺⣿⣿⣿⣿⣿⠀⠈⠛⠿⣦⣴⣶⣿⣟⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠀⠀⣀⣀⣤⡴⠞⠋⠀⣼⣿⣿⣿⣿⡿⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣿⣿⣿⣿⣧⠀⠀⠀⠀⠉⠛⠿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣾⠿⠛⠋⠁⠀⠀⠀⣰⣿⣿⣿⣿⣿⠇⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣿⣿⣿⣿⣿⣿⣿⣤⣀⣠⣴⣾⣿⣿⣿⣿⣿⣿⣿⡿⠛⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⠻⣿⣿⣿⣿⣿⣿⣿⣿⣦⣄⣀⣤⣾⣿⣿⣿⣿⣿⣿⡟⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠀⢻⣿⣿⣿⣟⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣽⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⣀⡀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣿⣿⣾⣿⣿⣿⣿⡿⣿⢿⣿⣿⣿⣿⠿⠿⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠛⣿⣿⣿⣿⡿⣾⣿⣿⣿⣿⣿⣷⣾⣿⡏⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⣿⣿⣿⣿⣿⠋⣠⣿⣿⣿⣿⣿⣿⣾⣧⣾⣿⣿⣿⣿⣿⣿⣿⣿⣯⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣮⠥⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⢿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀⢹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃⠀⠀⠀
-⣴⣦⣤⠠⣦⣤⣠⣤⣤⠀⠀⠀⠉⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡏⢻⣿⣿⣿⣿⣿⣿⣿⣿⣷⡀⢹⣿⣿⣿⣿⣿⣿⣿⣿⡉⠀⠀⠀⠀⠀
-⠻⠿⠟⠛⠛⠛⠛⠻⠟⠀⠀⠀⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋⠈⠉⠉⢿⡟⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⢿⡇⠀⠻⣏⠉⠏⠁⠙⢿⣿⣿⣷⣼⣿⣿⣿⣿⣿⣿⣿⣿⣷⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⠏⣾⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⣶⠀⣰⡟⠀⠀⠈⣿⡀⣹⣿⣭⣿⡟⠀⢸⣿⣭⣿⠏⣠⣾⠃⠀⠀⠹⣧⠀⠙⠀⠈⣿⣿⡿⣿⣿⣿⣿⣿⣿⢿⣿⠘⣿⡇⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡏⠀⣿⣧⣄⠉⠛⠋⢹⣿⣿⣿⢇⣤⣶⣿⣾⣿⣶⣶⣿⣿⣿⣿⣿⣿⣿⣿⣧⣤⣾⣿⣿⣿⣿⣿⣿⣿⣿⣶⣶⣿⣷⣶⣷⣦⣼⣿⣿⢻⡏⠉⠛⠉⢡⣬⣿⡇⠸⣿⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⢶⣶⣤⣼⣤⣤⣿⣿⣿⣧⢀⠀⠀⢿⣿⣿⣿⣿⣿⣿⡟⢻⣿⣿⣋⣿⣿⡏⢻⣿⣿⣿⣿⠿⣿⣿⣿⣿⡿⢻⣿⣿⣏⣿⣿⣿⠹⣿⣿⣿⣿⣿⣿⣎⠁⠀⠀⢠⣽⣿⣿⣧⣤⣽⣤⣶⣶⠄
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⢈⣹⣿⣿⣿⣿⣿⣿⠀⣿⡗⠀⣾⣿⣿⣿⣿⣿⡟⠀⢸⣿⡿⣿⣿⣿⡇⠀⠙⢿⣿⣿⣴⣿⣿⣿⠟⠁⢸⡿⣟⡿⢿⡿⡇⠀⢻⣿⣿⣿⣿⣿⣿⡀⢀⣷⡀⣿⣿⣿⣿⣿⣿⣿⡁⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⢸⣿⣿⣿⣿⣿⣿⣷⠀⠘⡟⢻⣭⣿⠟⣿⠀⠀⠀⠀⠙⠿⠋⠁⠀⠀⠀⣸⠃⣿⣠⣾⢿⠇⠀⢸⣿⣿⣿⣿⣿⣿⣧⢸⣿⣷⣿⣿⣿⣿⣿⣿⣿⣿⣦⠀
-⠀⠀⠀⠀⠀⠀⠀⢠⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀⠀⣿⠘⢿⣿⡟⣸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠛⠟⠃⢸⠀⠀⣾⣿⣿⣿⣿⣿⣿⣿⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣇
-⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⡿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣀⣼⣦⣤⣶⡿⠛⠀⠀⠀⠀⠀⣶⠆⠀⠀⠀⠀⠙⠻⣶⡤⠤⠿⠄⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿
-⠀⠀⠀⠀⠀⠀⢠⡟⣿⣿⣿⣿⣿⣷⠿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡋⢿⠟⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⡾⠆⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟⠸⣿⣿⣿⣿⣟⣿
-⠀⠀⠀⠀⠀⠀⠀⣷⠀⠙⠛⢿⣟⠋⣶⡹⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣟⣿⣿⣿⣄⠀⠀⠀⠀⠀⠀⠀⠠⢤⠤⢤⡶⠀⠀⠀⠀⠀⠀⠀⣠⣾⣿⣿⣿⡿⠛⣿⣿⣿⣿⣿⣿⣿⣿⣿⠏⣀⠀⣛⣽⠏⠁⠀⣽
-⠀⠀⠀⠀⠀⠀⠀⢹⡇⠀⠀⢀⣙⣳⣿⣷⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⣴⣾⣿⣿⣿⣿⡿⠃⢀⣿⣿⣿⣿⣿⣿⣿⣿⣧⣾⣿⣾⣏⡁⠀⠀⢸⡟
-⠀⠀⠀⠀⠀⠀⠀⠀⢻⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣤⣤⣄⣀⠀⢀⣀⣤⣤⣶⣾⣿⣿⣿⣿⣿⡿⠋⠁⠀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣶⣿⣿⣿⣿⣿⣿⣿⣿⠁
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠻⣿⣿⣿⣿⣿⣿⣯⠛⠿⢿⣿⠻⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠻⢿⣿⠿⢿⣿⠻⢯⣭⠉⣭⣭⠟⢻⣿⠿⢻⣿⠿⠋⠉⠀⠀⣠⣾⣿⣿⣫⣿⡿⣿⣿⠿⢿⣿⣿⣿⣿⣿⣿⣿⡿⠁⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠛⢿⣿⣿⣿⣿⣷⠶⣤⣿⣇⡈⣿⣿⣿⣿⡟⢿⣿⣷⠄⣀⣀⣤⣤⣼⡁⠀⢸⢻⣶⡏⡿⠀⠀⣷⣤⣤⣄⣀⠀⠀⣠⡾⢿⣿⣿⣿⣿⣿⣷⣿⣥⡴⢾⣿⣿⣿⣿⣿⠟⠋⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠿⢿⣿⣧⣀⡀⠉⠉⠛⠛⣿⠿⠷⠚⠛⠋⢫⠉⠀⠀⠀⣿⠀⠀⢸⣿⡟⣇⡇⠀⠀⢸⠀⠀⠀⠈⢉⡟⠛⠛⠾⠿⢿⡟⠛⠉⠉⠁⣀⣴⣿⡿⠿⠛⠋⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠁⠀⠀⠀⢸⠃⠀⠀⣄⡀⠀⣟⠳⣄⠀⠀⠘⠷⢤⣼⠿⠀⠹⣷⣤⠶⠋⠀⠀⣠⡴⢻⡇⠀⣀⡄⠀⠈⣇⠀⠀⠀⠀⠉⠁⣀⣄⣀⣀⣀⡀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⡄⠀⠀⠈⠙⢧⠙⢦⣌⡙⠶⢤⣀⡀⠀⠀⠀⠀⠀⠀⣀⣠⠴⠚⣁⡤⠾⣴⢛⡇⠀⠀⠀⣿⡆⠀⠀⠀⠀⠀⢿⣿⣿⣿⣿⡷⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⢿⡻⣄⡀⠀⠀⢨⣷⡀⠀⠉⠙⠲⢬⣽⣗⣦⣴⣶⣞⣻⡥⠶⠚⠉⠁⢀⣼⣧⠘⠀⠀⣠⣾⡿⢿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡿⠈⠛⠮⠟⠒⠒⣿⡿⡿⣆⠀⠀⠀⠘⠿⢿⣿⠷⢿⣿⠟⠀⠀⠀⠀⢠⣾⣿⣿⡗⠒⠛⠯⠞⠁⢸⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⡏⡟⠊⠓⠦⠤⢴⣿⡷⣧⠈⠳⣄⡀⠀⣴⠟⣿⡀⣼⠙⢦⡀⠀⣠⠴⠋⣸⢿⣿⣧⠤⠤⠀⠉⢻⡎⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠃⠷⠦⠤⠤⠤⣾⣿⣇⣿⠙⠶⢤⣙⣻⠵⠶⠎⠉⠉⠶⠦⣿⢋⣡⠴⠚⣽⣾⣿⣿⠠⠤⠤⠴⠾⠃⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⠻⣆⡀⠀⠀⠀⡏⣿⢩⣿⡄⠀⠀⠀⢹⠀⠀⣶⠖⣶⠀⠀⣿⠀⠀⠀⢀⣿⠀⢿⣿⡄⠀⠀⢀⣠⠞⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣸⡀⠉⠉⢻⢀⣿⡿⢦⣿⠙⢦⡀⠀⠈⠳⣤⣹⣦⣞⣠⡶⠃⠀⢀⣠⠟⢸⣴⢿⣿⡇⢻⠋⠉⠀⢀⣽⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡇⠈⠙⠓⠒⠋⣸⢿⠇⢠⣽⠳⠦⣭⣷⣶⣿⡗⣛⣋⣾⢻⣦⣶⣾⣭⡤⠖⢻⡇⠈⣿⢷⠘⠒⠒⠋⠉⢹⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⡗⠶⢤⣤⡄⣰⣇⡼⣠⣄⣻⣴⣄⣤⡤⠤⢔⣛⣏⣿⣝⣛⡳⢤⠤⣤⣤⣦⣾⣧⣤⢿⣜⣇⠠⣤⡤⠴⢺⣿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣿⡧⣤⣤⠀⣰⣏⣼⡇⠒⠒⠒⠓⠂⠀⠉⠉⠉⠉⠁⠀⠀⠈⠉⠉⠉⠛⠛⠛⠓⠒⠛⢺⣷⣘⣧⡀⣠⣤⣤⣿⣇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡿⣿⠀⠀⠀⠘⠋⢸⢿⢃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣏⣧⠈⠛⠀⠀⠀⢻⣿⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⢧⡟⢶⣤⣀⠀⠀⡟⣾⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⠸⡆⠀⢀⣠⣴⠻⡏⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣾⠾⣅⣀⠀⠉⠙⣻⠇⣯⣌⡙⠲⢤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⡤⠶⢛⣉⣼⡆⣟⠛⠉⠀⢀⣠⡿⢿⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡇⠀⠀⠈⠉⠛⠓⣿⠀⣧⡀⠈⠙⠲⠦⢬⣙⣛⣶⠆⠀⠀⠀⠀⠀⠀⢐⣒⣋⡭⠤⠖⠛⠉⣄⣸⡇⢹⠖⠛⠋⠉⠀⠀⠈⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⠻⢦⣀⢀⣀⣀⣠⡇⠀⣇⠙⢦⣄⠀⠀⠀⠀⠀⠉⠁⠀⠈⠉⠉⠉⠀⠀⠀⠀⠀⠀⠀⢀⡴⠟⢹⡇⠸⣦⣄⣀⡀⣀⣤⠞⣷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣦⣄⣸⠹⣇⣀⣼⠁⡞⣟⠳⢤⣈⠛⠦⣄⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⡴⠞⢉⣤⠖⣿⢿⡄⢷⣀⣈⡇⣿⣡⣤⣾⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⣿⠀⠈⠉⠀⣿⢩⠏⢰⣿⣿⡄⠀⠈⡛⠲⠤⣍⣓⡲⠤⢤⣀⣀⣀⣠⠤⠴⣒⣋⡥⠴⠚⠉⠀⣼⡟⣸⡇⠘⣏⢹⠃⠉⠉⠀⢻⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡟⠓⠦⢤⣀⣻⡎⠀⢸⣿⣿⢻⣄⡀⠹⣆⠀⠀⠉⠉⠛⠓⠚⠛⠛⠒⠚⠉⠉⠀⠀⠀⠘⢀⣴⡿⣱⣿⠇⠀⢹⣾⢀⣠⠤⠖⠛⣇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣟⠳⠦⣄⡀⠈⢻⡇⠀⠀⢿⡿⣧⢹⡟⠳⣌⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡴⢋⡟⣱⢿⣿⠀⠀⢸⡟⠉⢀⣀⡤⠞⢻⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡾⣻⠀⠀⠀⠉⠳⣦⡇⠀⠀⢸⡇⠘⢿⣿⣗⠮⣗⣀⡀⠀⣠⣀⣀⠀⣀⣀⣀⠀⠀⣀⣼⡿⢖⣿⡗⠋⢸⡇⠀⠀⢸⣧⡞⠋⠁⠀⠀⣿⢻⡀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣸⠃⠻⣤⣀⠀⠀⠀⢸⡇⠀⠀⢸⢷⣄⡀⢻⣹⣷⣼⣯⣹⣽⡟⠁⠉⠉⠉⠡⢉⣯⣭⣥⣤⣾⣿⣾⠁⣁⡼⢷⠀⠀⠘⣿⠀⠀⠀⢀⣠⡾⠀⣷⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡟⢳⣤⣀⠉⠉⠙⠛⢻⡇⠀⠀⢸⠀⠈⠉⠛⢷⡿⣿⣟⠛⠛⢧⡀⠀⠀⢀⣤⣼⠛⠛⣛⣿⣽⣶⠟⠋⠉⠀⢸⠀⠀⠀⣿⠛⠋⠉⠉⢁⣠⡴⢛⡇⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⡄⠀⠉⠉⠛⠒⠒⣾⡇⠀⠀⢸⠀⠀⠀⠀⠀⠉⠀⠈⠙⠷⠾⣿⣶⠛⠳⡾⠷⠖⠋⠁⠀⠈⠉⠀⠀⠀⠀⢸⠀⠀⠀⣿⡒⠚⠛⠋⠉⠁⠀⣾⣷⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⣯⡷⣄⡀⠀⢀⣤⡶⣿⠃⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡇⠀⢠⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⢿⠷⢤⣄⠀⠀⣠⣼⣥⡟⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣧⡈⣻⠷⢶⡶⣷⡟⠀⠀⠀⣾⢦⣀⡀⠀⠀⠀⠀⢀⣀⣠⡴⢻⠃⠀⠀⣏⠳⣤⣀⡀⠀⠀⠀⠀⠀⣀⣠⢾⠀⠀⠀⠘⣟⠳⣾⠶⣿⠉⣸⣿⡄⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⡟⣿⣿⣿⣸⣿⣴⠟⠁⠀⠀⠀⣿⡲⠦⢭⣝⣛⣻⡯⠽⠟⠉⣠⡾⠀⠀⠀⢻⣤⡌⠛⠯⠿⣛⣛⣻⣯⠭⢶⣿⡇⠀⠀⠀⠘⠦⣽⣆⣸⣶⣿⣧⡇⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⠇⠀⠀⠀⠀⠀⠀⠀⣇⠀⠀⠉⠙⠛⠉⠉⠛⠛⠛⢉⡇⠀⠀⠀⢘⡏⠙⠛⠛⠋⠉⠛⠋⠀⠀⠀⢈⡇⠀⠀⠀⠀⠀⠀⠀⢿⣯⣿⡟⠁⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢰⣯⡉⠓⠒⠲⠶⠶⠶⠶⢶⣶⣾⡇⠀⠀⠀⢸⣿⢶⡶⠶⠶⠶⠶⠒⠒⠚⠋⣹⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡇⠉⠓⠒⠒⠒⠒⠒⠚⠉⢁⣿⡇⠀⠀⠀⠀⣿⡄⠉⠛⠒⠒⠒⠒⠒⠒⠋⠉⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡟⠲⠦⠤⠤⠤⠤⠤⠴⠶⣿⣿⠁⠀⠀⠀⠀⢿⢻⡷⠶⠤⠤⠤⠤⠤⠤⠖⠚⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀🍙♡‹𝟹㊗🎧
-
-"""
-VALID_COLORS = ['blue', 'red', 'green']
-COMMANDS = {
-    'help': show_help,
-    'goodbye': exit_chat,
-    'history': show_history,
-    # Add more commands here
-}
-
-
-def handle_exception(e):
-    error_type = type(e).__name__
-    if error_type in custom_error_messages:
-        message = random.choice(custom_error_messages[error_type])
-    else:
-        message = f"Unexpected Error: {e}"
-    simulate_typing(colored(message, "red"))
-
-
-def show_tutorial():
-    tutorial_text = """
-    Welcome to the tutorial!
-    - 'help': Show help menu
-    - 'goodbye', 'quit', 'exit': Exit the chat
-    - 'history': Show chat history
-    """
-    simulate_typing(colored(tutorial_text, "yellow"))
-
-
-def generate_unique_id():
-    return str(uuid.uuid4())
-
-# Initialize Google Sheets and create 'User' worksheet if it doesn't exist
-def init_gspread():
-    gc = gspread.service_account(filename='creds.json')
-    sh = gc.open('Julie-history')
-    try:
-        user_worksheet = sh.worksheet('User')
-    except:
-        user_worksheet = sh.add_worksheet(title='User', rows='100', cols='20')
-    return sh, user_worksheet
-
-# Register user and create new worksheet for them
-def register_user(sh, user_id, session_data):
-    user_worksheet = sh.worksheet('User')
-    user_worksheet.append_row([user_id, session_data])
-    new_worksheet = sh.add_worksheet(title=f'User_{user_id}', rows='100', cols='20')
-    return new_worksheet
-
-# Reading a cell (A1 notation)
-def read_cell(worksheet, cell_name):
-    return worksheet.acell(cell_name).value
-
-# Writing to a cell (A1 notation)
-def write_cell(worksheet, cell_name, value):
-    worksheet.update(cell_name, value)
-
-# Appending a row
-def append_row(worksheet, row_values):
-    worksheet.append_row(row_values)
-    
-
-def capture_session_data(user_settings):
-    opt_status = input("Do you consent to data storage for improving service quality? (yes/no): ").strip().lower()
-    session_data = {
-        'start_time': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-        'user_settings': user_settings,
-        'opt_in_status': opt_status == 'yes'
-    }
-    return str(session_data)
-
-# Log interactions between user and chatbot
-def log_interaction(new_worksheet, user_message, bot_response):
-    interaction_data = [user_message, bot_response]
-    append_row(new_worksheet, interaction_data)
-
-def init():
-    load_dotenv("keys.env")
-    worksheet = init_gspread()
-    simulate_loading_spinner()
-    simulate_typing(ascii_art, delay=0.001)
-    required_keys = ["OPENAI_API_KEY"]
-    missing_keys = [key for key in required_keys if os.getenv(key) is None]
-
-    if missing_keys:
-        raise Exception(f"{', '.join(missing_keys)} not found")
-    else:
-        print("All required keys found")
-        openai.api_key = os.getenv("OPENAI_API_KEY")
+        
 
 
 
 def main():
     try:
-        init()
+        print("Debug: Initializing...")
+        init_obj = Initialize()
+        memory_obj = BotMemory()
+        user_worksheet = memory_obj.user_worksheet
 
-        # Initialize Google Sheets
-        sh, user_worksheet = init_gspread()
+        print("Debug: Checking or generating user...")
+        username, user_id, is_new_user = memory_obj.check_or_generate_user(user_worksheet, init_obj.username)
+        print(f"Debug: Is new user? {is_new_user}")
 
-        # Generate Unique User ID
-        user_id = generate_unique_id()
 
-        # Capture Session Data
-        user_settings = "some_user_settings"  # Replace with actual user settings
-        session_data = capture_session_data(user_settings)
+        memory_obj.register_user(memory_obj.sh, user_id, username, is_new_user)
 
-        # Register User (or get existing user worksheet)
-        new_worksheet = register_user(sh, user_id, session_data)
+        # Create a new worksheet for new users
+        if is_new_user:
+            new_worksheet = memory_obj.create_user_worksheet(memory_obj.sh, None, user_id, username)
+        else:
+            worksheet_name = f"{username}_{user_id}".replace("-", "_")
+            new_worksheet = memory_obj.sh.worksheet(worksheet_name)
 
-        # Initialize history log
         history = []
+        user_color = init_obj.user_color
 
         while True:
-            simulate_typing(
-                colored("Choose a text color for your messages (blue, red, green): ", "cyan"))
-            user_color = input()
-            if user_color.lower() in ['blue', 'red', 'green']:
-                break
+            user_input = input(colored("You: ", user_color)).lower()
+            history.append(f"You: {user_input}")
+
+            if user_input == 'help':
+                Utils.show_help()
+            elif user_input in ["goodbye", "quit", "exit"]:
+                Utils.exit_chat()
+            elif user_input == 'history':
+                past_data = memory_obj.retrieve_user_data(memory_obj.sh, user_id, username)
+                Utils.show_history(past_data)
+            elif user_input == 'tutorial':
+                Utils.show_tutorial()
             else:
-                simulate_typing(
-                    colored("Invalid color choice. Please try again.", "red"))
-
-            while True:
-                user_input = input(colored("You: ", user_color)).lower()
-                history.append(f"You: {user_input}")
-
-                if user_input == 'help':
-                    show_help()
-                elif user_input in ["goodbye", "quit", "exit"]:
-                    exit_chat()
-                elif user_input == 'history':
-                    show_history(history)
-                elif user_input == 'tutorial':
-                    show_tutorial()
-                else:
-                    chatbot_response = generate_response(user_input)
-                    simulate_typing(colored(f"Julie: {chatbot_response}", "green"))
-                    history.append(f"Julie: {chatbot_response}")
-                    
-                    # Log user interaction conditionally based on opt-in/opt-out status
-                    if session_data['opt_in_status']:
-                        log_interaction(new_worksheet, f"You: {user_input}", f"Julie: {chatbot_response}")
+                chatbot_response = generate_response(user_input, init_obj.memory)
+                print(f"Julie: {chatbot_response}")
+                history.append(f"Julie: {chatbot_response}")
+                memory_obj.log_interaction(new_worksheet, user_input, chatbot_response)
 
     except KeyboardInterrupt:
-        message = random.choice(interrupt_messages)
-        simulate_typing(colored(message, "red"))
+        message = random.choice(Utils.interrupt_messages)
+        print(f"Unexpected exit: {message}")
     except Exception as e:
-        print(f"Unexpected Error: {e}")
-
+        Utils.handle_exception(e)
 
 if __name__ == '__main__':
     main()
