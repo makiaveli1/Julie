@@ -25,38 +25,46 @@ class BotMemory:
                 title='User', rows='100', cols='20')
         return sh, user_worksheet
 
-    def generate_unique_id(self, user_worksheet):
-        Utils.simulate_typing(colored("What do I call you, Senpai?: ", "cyan"))
-        username = input().strip()
 
-        # Validate username length
+    def generate_unique_id(self):
+        user_id = str(uuid.uuid4())
+        return user_id
+
+    def check_or_generate_user(self,user_worksheet, input_username):
         min_length = 3
         max_length = 50
-        if len(username) < min_length or len(username) > max_length:
-            print(
+        is_new_user = False
+
+        if len(input_username) < min_length or len(input_username) > max_length:
+            raise ValueError(
                 f"Username should be between {min_length} and {max_length} characters long.")
-            return None
 
-        # Generate a unique user ID (UUID)
-        user_id = str(uuid.uuid4())
+        existing_usernames = user_worksheet.col_values(2)
+        existing_user_ids = user_worksheet.col_values(1)
 
-        # Check if the username or user ID already exists
-        # Assuming User_ID is the first column
-        user_ids = user_worksheet.col_values(1)
-        # Assuming Username is the second column
-        usernames = user_worksheet.col_values(2)
+        if input_username in existing_usernames:
+            index = existing_usernames.index(input_username)
+            user_id = existing_user_ids[index]
+        else:
+            user_id = self.generate_unique_id()
+            is_new_user = True
 
-        if username in usernames or user_id in user_ids:
-            print("Username or User ID already exists.")
-            return None
-
-        return username, user_id
+        return input_username, user_id, is_new_user
 
     # Register user and create new worksheet for them
 
     def register_user(self, sh, user_id, session_data, username, is_new_user):
         # Add user to 'User' worksheet
         user_worksheet = sh.worksheet('User')
+
+        # Provide default values if session_data is None
+        if session_data is None:
+            session_data = {
+                'user_settings': 'N/A',
+                'opt_in_status': 'N/A',
+                'start_time': 'N/A',
+                'session_id': 'N/A'
+            }
 
         if is_new_user:
             # Find the next available row
@@ -67,10 +75,10 @@ class BotMemory:
             row_data = [
                 user_id,
                 username,
-                session_data.get('user_settings', 'N/A'),
-                session_data.get('opt_in_status', 'N/A'),
-                session_data.get('start_time', 'N/A'),
-                session_data.get('session_id', 'N/A')
+                session_data['user_settings'],
+                session_data['opt_in_status'],
+                session_data['start_time'],
+                session_data['session_id']
             ]
 
             # Insert the row data into the next available row
@@ -78,20 +86,18 @@ class BotMemory:
 
         else:
             # Search for the existing row with the user's ID
-            user_ids = user_worksheet.col_values(
-                1)  # User_ID is in the first column
-            # Adding 1 to adjust for 0-based index
+            user_ids = user_worksheet.col_values(1)
             row_number = user_ids.index(user_id) + 1
 
             # Update the existing row
             user_worksheet.update_cell(
-                row_number, 3, session_data.get('user_settings', 'N/A'))
+                row_number, 3, session_data['user_settings'])
             user_worksheet.update_cell(
-                row_number, 4, session_data.get('opt_in_status', 'N/A'))
+                row_number, 4, session_data['opt_in_status'])
             user_worksheet.update_cell(
-                row_number, 5, session_data.get('start_time', 'N/A'))
+                row_number, 5, session_data['start_time'])
             user_worksheet.update_cell(
-                row_number, 6, session_data.get('session_id', 'N/A'))
+                row_number, 6, session_data['session_id'])
 
     # Create a new worksheet for a user
     def create_user_worksheet(self, sh, user_id, username):
@@ -112,9 +118,15 @@ class BotMemory:
 
         return new_worksheet
 
-    def retrieve_user_data(self, sh, user_id, username):
+    def retrieve_user_data(self, sh, user_id, memory, username):
         # Validate and format the worksheet name
         worksheet_name = f"{username}_{user_id}".replace("-", "_")
+        print(f"Debug: Worksheet name: {worksheet_name}")
+        print("Debug: Type of sh:", type(memory.sh))  # Debugging sh
+        print("Debug: sh attributes:", dir(memory.sh))  # Debugging sh
+
+        print("Debug: Type of memory:", type(memory))  # Debugging memory
+        print("Debug: memory attributes:", dir(memory))  # Debugging memory
 
         try:
             # Open the user-specific worksheet
@@ -127,10 +139,11 @@ class BotMemory:
             print(
                 f"Debug in retrieve_user_data: {type(past_data)}, {past_data}")
 
-            return past_data
-        except:
-            print("No past data found for this user.")
-            return None
+            # Return the data if found
+            return past_data if past_data else {}
+        except Exception as e:
+            print(f"No past data found for this user. Error: {e}")
+            return {}
 
     # Reading a cell (A1 notation)
 
@@ -151,7 +164,6 @@ class BotMemory:
 
     def log_interaction(self, new_worksheet, user_message, bot_response):
         current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        # Fill the list with placeholders for the other columns
         interaction_data = [user_message, bot_response,
                             current_time, '', '', '', '', '']
         self.append_row(new_worksheet, interaction_data)
@@ -174,43 +186,13 @@ class BotMemory:
                 "Your chat history will not be logged.", "green"))
         return session_data
 
-    def check_or_generate_user(self, user_worksheet, username):
-
-        # Skip the header by starting at the second row
-        user_ids = user_worksheet.col_values(1)[1:]
-        usernames = user_worksheet.col_values(2)[1:]
-
-        print("Debug: User IDs from sheet:", user_ids)
-        print("Debug: Usernames from sheet:", usernames)
-        print("Debug: Inputted username:", username)
-
-        is_new_user = False
-        user_id = None
-
-        if username in usernames:
-            # +1 to correct the index because we skipped the header
-            username_index = usernames.index(username) + 1
-            # +1 because we started at the second row
-            user_id = user_worksheet.cell(username_index + 1, 1).value
-        else:
-            is_new_user = True
-            user_id = str(uuid.uuid4())
-
-        print("Debug: Generated or retrieved User ID:", user_id)
-        print("Debug: Is new user?", is_new_user)
-
-        return username, user_id, is_new_user
-
     def analyze_frequent_topics(self, conversation_history, past_data, top_n=3):
-        # Extracting user messages from the conversation history
         realtime_text = " ".join(
             [msg['content'] for msg in conversation_history if msg['role'] == 'user'])
 
-        # Extracting user messages from past data
         past_text = " ".join([interaction['User_Message']
                              for interaction in past_data])
 
-        # Combining both sets of texts
         all_text = realtime_text + " " + past_text
 
         words = re.findall(r'\w+', all_text.lower())

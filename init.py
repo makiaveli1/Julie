@@ -1,10 +1,10 @@
 from utils import Utils
 from Memory import BotMemory
-from termcolor import colored
-from dotenv import load_dotenv
 import os
-import time
+from dotenv import load_dotenv
+from termcolor import colored
 import openai
+from utils import Utils
 from asciiart import ascii_art
 
 
@@ -16,6 +16,7 @@ class Initialize:
         self.username, self.user_id, self.is_new_user = self.init()
         self.past_data, self.session_data = self.handle_user_data()
         self.user_color = self.get_user_color()
+        
 
     @staticmethod
     def load_environment():
@@ -35,28 +36,30 @@ class Initialize:
             print("All required keys found")
             openai.api_key = os.getenv("OPENAI_API_KEY")
 
-
     def init(self):
         try:
             Utils.simulate_loading_spinner()
             Utils.simulate_typing(ascii_art, delay=0.001)
 
-            # Get the username and user_id from generate_unique_id
-            username, user_id = self.memory.generate_unique_id(
-                self.memory.user_worksheet)
+            # Prompt the user for a username
+            Utils.simulate_typing(colored("What do I call you, Senpai?: ", "cyan"))
+            input_username = input().strip()
+
+            # Validate and either fetch or generate the username and user_id
+            username, user_id, is_new_user = self.memory.check_or_generate_user(
+                self.memory.user_worksheet, input_username)
 
             if username is None or user_id is None:
                 raise ValueError("Username or User ID is None.")
 
-            # Pass the username to check_or_generate_user
-            username, user_id, is_new_user = self.memory.check_or_generate_user(
-                self.memory.user_worksheet, username)
-
             print(f"Debug: Is new user? {is_new_user}")
+
             return username, user_id, is_new_user
 
         except Exception as e:
             print(f"Unexpected Error: {e}")
+
+
 
     def handle_user_data(self):
         past_data = None
