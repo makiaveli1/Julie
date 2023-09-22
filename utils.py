@@ -5,9 +5,9 @@ import random
 
 class Utils:
     def __init__(self):
-            self.load_environment()
-        
-        # List of interrupt messages
+        self.load_environment()
+
+    # List of interrupt messages
     interrupt_messages = [
         "Oh no, you've interrupted me, nyaa~ (╥_╥)",
         "What have you done, senpai? ·°՞(≧□≦)՞°·.",
@@ -60,7 +60,7 @@ class Utils:
         "KeyboardInterrupt": interrupt_messages,
         "ValueError": valuation_error_messages,
     }
-    
+
     VALID_COLORS = ['blue', 'red', 'green']
     COMMANDS = {
         'help': 'show_help',
@@ -69,14 +69,12 @@ class Utils:
         # Add more commands here
     }
 
-
     @staticmethod
     def simulate_typing(text, delay=0.05):
         for char in text:
             print(char, end='', flush=True)
             time.sleep(delay)
         print()
-
 
     @staticmethod
     def simulate_loading_spinner(duration=3, text="Loading"):
@@ -88,29 +86,27 @@ class Utils:
                 time.sleep(0.2)
         print()
 
-
     @staticmethod
     def show_help():
         Utils.simulate_typing(
             colored("Julie: Here are some commands you can use:", "green"))
         Utils.simulate_typing(colored("- 'goodbye': Exit the chat", "yellow"))
-        Utils.simulate_typing(colored("- 'help': Show this help message", "yellow"))
-        Utils.simulate_typing(colored("- 'history': Show chat history", "yellow"))
-
+        Utils.simulate_typing(
+            colored("- 'help': Show this help message", "yellow"))
+        Utils.simulate_typing(
+            colored("- 'history': Show chat history", "yellow"))
 
     @staticmethod
     def exit_chat():
         Utils.simulate_typing(colored("Julie: Goodbye!", "red"))
         exit(0)
 
-
     @staticmethod
     def show_history(history):
         Utils.simulate_typing(colored("Chat History:", "magenta"))
         for line in history:
             Utils.simulate_typing(colored(line, "white"))
-            
-    
+
     @staticmethod
     def handle_exception(e):
         error_type = type(e).__name__
@@ -119,7 +115,6 @@ class Utils:
         else:
             message = f"Unexpected Error: {e}"
         Utils.simulate_typing(colored(message, "red"))
-
 
     @staticmethod
     def show_tutorial():

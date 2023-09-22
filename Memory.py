@@ -1,5 +1,4 @@
-from dotenv import load_dotenv
-import gspread
+import json
 import uuid
 from datetime import datetime
 from collections import Counter
@@ -13,26 +12,46 @@ logging.basicConfig(level=logging.DEBUG)
 
 
 class BotMemory:
+    """
+    This class is responsible for managing the bot's memory.
+    It includes methods for loading, saving, and manipulating user data.
+    """
     def __init__(self):
-        load_dotenv()
-        self.sh, self.user_worksheet = self.init_gspread()
+        """
+        Initialize the BotMemory class.
+        Load user data from file during initialization.
+        """
+        self.user_data = self.load_user_data()
 
-    def init_gspread(self):
-        gc = gspread.service_account(filename='creds.json')
-        sh = gc.open('Julie-history')
+    def load_user_data(self):
+        """
+        Load user data from a JSON file.
+        Return an empty dictionary if file not found.
+        """
         try:
-            user_worksheet = sh.worksheet('User')
-        except:
-            user_worksheet = sh.add_worksheet(
-                title='User', rows='100', cols='20')
-        return sh, user_worksheet
+            with open('user_data.json', 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return {}
 
+    def save_user_data(self):
+        """
+        Save user data to a JSON file.
+        """
+        with open('user_data.json', 'w') as f:
+            json.dump(self.user_data, f)
 
     def generate_unique_id(self):
+        """
+        Generate a unique user ID.
+        """
         user_id = str(uuid.uuid4())
         return user_id
 
-    def check_or_generate_user(self,user_worksheet, input_username):
+    def check_or_generate_user(self, input_username):
+        """
+        Check if a user exists, if not, generate a new user.
+        """
         min_length = 3
         max_length = 50
         is_new_user = False
@@ -41,25 +60,20 @@ class BotMemory:
             raise ValueError(
                 f"Username should be between {min_length} and {max_length} characters long.")
 
-        existing_usernames = user_worksheet.col_values(2)
-        existing_user_ids = user_worksheet.col_values(1)
+        existing_usernames = list(self.user_data.keys())
 
         if input_username in existing_usernames:
-            index = existing_usernames.index(input_username)
-            user_id = existing_user_ids[index]
+            user_id = self.user_data[input_username]['user_id']
         else:
             user_id = self.generate_unique_id()
             is_new_user = True
 
         return input_username, user_id, is_new_user
 
-    # Register user and create new worksheet for them
-
-    def register_user(self, sh, user_id, session_data, username, is_new_user):
-        # Add user to 'User' worksheet
-        user_worksheet = sh.worksheet('User')
-
-        # Provide default values if session_data is None
+    def register_user(self, user_id, session_data, username, is_new_user):
+        """
+        Register a new user or update an existing user's session data.
+        """
         if session_data is None:
             session_data = {
                 'user_settings': 'N/A',
@@ -69,114 +83,56 @@ class BotMemory:
             }
 
         if is_new_user:
-            # Find the next available row
-            next_row = len(user_worksheet.get_all_values()) + \
-                1  # Assuming the first row contains headers
-
-            # Prepare the row data
-            row_data = [
-                user_id,
-                username,
-                session_data['user_settings'],
-                session_data['opt_in_status'],
-                session_data['start_time'],
-                session_data['session_id']
-            ]
-
-            # Insert the row data into the next available row
-            user_worksheet.insert_row(row_data, next_row)
+            user_data = {
+                'user_id': user_id,
+                'username': username,
+                'session_data': session_data
+            }
+            self.user_data[username] = user_data
 
         else:
-            # Search for the existing row with the user's ID
-            user_ids = user_worksheet.col_values(1)
-            row_number = user_ids.index(user_id) + 1
+            self.user_data[username]['session_data'] = session_data
 
-            # Update the existing row
-            user_worksheet.update_cell(
-                row_number, 3, session_data['user_settings'])
-            user_worksheet.update_cell(
-                row_number, 4, session_data['opt_in_status'])
-            user_worksheet.update_cell(
-                row_number, 5, session_data['start_time'])
-            user_worksheet.update_cell(
-                row_number, 6, session_data['session_id'])
+        self.save_user_data()
 
-    # Create a new worksheet for a user
-    def create_user_worksheet(self, sh, user_id, username):
-        # Validate and format the worksheet name
-        worksheet_name = f"{username}_{user_id}".replace("-", "_")
-
-        # Create a new worksheet
-        new_worksheet = sh.add_worksheet(
-            title=worksheet_name, rows="100", cols="20")
-
-        # Define columns
-        columns = ['User_Message', 'Bot_Response', 'Timestamp',
-                   'User_Feedback', 'Session_Duration', 'Frequently_Used_Commands',
-                   'User_Preference', 'Sentiment_Score']
-
-        # Add columns to the new worksheet
-        new_worksheet.append_row(columns)
-
-        return new_worksheet
-
-    def retrieve_user_data(self, sh, user_id, username):
-        logging.debug(f"Debug: Type of sh: {type(sh)}")
-        logging.debug(f"Debug: sh attributes: {dir(sh)}")
+    def retrieve_user_data(self, user_id, username):
+        """
+        Retrieve user data.
+        Return an empty dictionary if user not found.
+        """
         try:
-            worksheet_name = f"{username}_{user_id}".replace("-", "_")
-            logging.debug(f"Debug: Worksheet name: {worksheet_name}")
-            user_worksheet = sh.worksheet(worksheet_name)
-            past_data = user_worksheet.get_all_records()
-            logging.debug(f"Debug in retrieve_user_data: {type(past_data)}, {past_data}")
-            return past_data if past_data else {}
-        except Exception as e:
-            logging.error(f"No past data found for this user. Error: {e}")
+            user_data = self.user_data[username]
+            return user_data if user_data else {}
+        except KeyError:
+            logging.error(f"No past data found for this user.")
             return {}
         
         
     def handle_user_data(self, username, user_id, is_new_user):
+        """
+        Handle user data.
+        Retrieve past data if user exists, capture new session data.
+        """
         past_data = None
         session_data = None
         try:
-            if username and user_id:  # None-check can be simplified
+            if username and user_id:
                 if not is_new_user:
-                    logging.debug(f"In BotMemory: {self.sh}, {user_id}, {username}")
-                    past_data = self.retrieve_user_data(self.sh, user_id, username)
+                    past_data = self.retrieve_user_data(user_id, username)
             
-            session_data = self.capture_session_data(None)  # Assuming this method can handle None
+            session_data = self.capture_session_data(None)
         except ValueError as ve:
             logging.error(f"ValueError in handle_user_data: {ve}")
-        except Exception as e:  # General Exception should be the last
+        except Exception as e:
             logging.error(f"Unexpected error in handle_user_data: {e}")
 
         return past_data, session_data
 
-
-    # Reading a cell (A1 notation)
-
-    def read_cell(self, worksheet, cell_name):
-        return worksheet.acell(cell_name).value
-
-    # Writing to a cell (A1 notation)
-
-    def write_cell(self, worksheet, cell_name, value):
-        worksheet.update(cell_name, value)
-
-    # Appending a row
-
-    def append_row(self, worksheet, row_values):
-        worksheet.append_row(row_values)
-
-        # Log interactions between user and chatbot
-
-    def log_interaction(self, new_worksheet, user_message, bot_response):
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        interaction_data = [user_message, bot_response,
-                            current_time, '', '', '', '', '']
-        self.append_row(new_worksheet, interaction_data)
-
     def capture_session_data(self, user_settings):
+        """
+        Capture session data.
+        Ask user if they want to remember the chat.
+        """
         Utils.simulate_typing(colored(
             "Would you like me to remember our chat? (yes/no): ", "cyan"))
         opt_status = input().strip().lower()
@@ -195,6 +151,9 @@ class BotMemory:
         return session_data
 
     def analyze_frequent_topics(self, conversation_history, past_data, top_n=3):
+        """
+        Analyze frequent topics from conversation history and past data.
+        """
         realtime_text = " ".join(
             [msg['content'] for msg in conversation_history if msg['role'] == 'user'])
 
@@ -208,3 +167,4 @@ class BotMemory:
         most_common_words = [item[0] for item in word_freq.most_common(top_n)]
 
         return most_common_words
+

@@ -6,51 +6,12 @@ import time
 from termcolor import colored
 import os
 import random
-<<<<<<< HEAD
-import requests
-import pygame
-=======
->>>>>>> parent of ede0feb (improve the prompt of the chatbot to make her character more dynamic)
 import logging
 
 
 logging.basicConfig(filename='chatbot.log', level=logging.INFO)
 
 
-<<<<<<< HEAD
-
-print("Debug: API_KEY from env:", os.getenv("PLAYHT_API_KEY"))
-print("Debug: USER_ID from env:", os.getenv("PLAYHT_USER_ID"))
-load_dotenv("keys.env")
-API_KEY = os.getenv("PLAYHT_API_KEY")
-USER_ID = 'mKrsF9yg6Vd5ZYaJsHbB38DXIsc2'
-
-headers = {
-    'Authorization': f'Bearer {API_KEY}',
-    'Content-Type': 'application/json',
-    'X-USER-ID': USER_ID,
-    'accept': 'text/event-stream'
-}
-
-payload = {
-    "text": "Hello from the ultra-realistic voice.",
-    "voice": "nova",
-    "quality": "medium",
-    "output_format": "mp3",
-    "speed": 1,
-    "sample_rate": 24000
-}
-
-print("Headers:", headers)
-print("Data:", payload)
-
-response = requests.post('https://play.ht/api/v2/tts', headers=headers, json=payload)
-print(response.text)
-print(response.status_code)
-
-
-=======
->>>>>>> parent of ede0feb (improve the prompt of the chatbot to make her character more dynamic)
 # List of interrupt messages
 interrupt_messages = [
     "Oh no, you've interrupted me, nyaa~ (╥_╥)",
@@ -124,20 +85,7 @@ def simulate_typing(text, delay=0.05):
         time.sleep(delay)
     print()
 
-def generate_audio(text, voice='nova', delay=0.05):
-    payload = {
-        'text': text,
-        'voice': voice,
-        'delay': delay
-    }
-    response = requests.post('https://play.ht/api/v2/tts', headers=headers, json=payload)
-    if response.status_code == 200:
-        audio_url = response.json()['payload']['url']
-        return audio_url
-    else:
-        return "Failed to generate audio."
-    
-    
+
 def generate_response(prompt, temperature=0.6, max_tokens=1000):
     model = "gpt-4"
     messages = [
@@ -307,28 +255,31 @@ def main():
 
         while True:
             user_input = input(colored("You: ", user_color)).lower()
-            history.append({"role": "user", "content": user_input})
+            history.append(f"You: {user_input}")
 
             if user_input == 'help':
-                Utils.show_help()
+                show_help()
             elif user_input in ["goodbye", "quit", "exit"]:
-                Utils.exit_chat()
+                exit_chat()
             elif user_input == 'history':
-                logging.debug(f"Debug in run.py: {user_id}, {username}")
-                past_data = memory_obj.retrieve_user_data(user_id, username)
-                Utils.show_history(past_data)
+                show_history(history)
             elif user_input == 'tutorial':
-                Utils.show_tutorial()
+                show_tutorial()
             else:
                 chatbot_response = generate_response(user_input)
                 simulate_typing(colored(f"Julie: {chatbot_response}", "green"))
                 history.append(f"Julie: {chatbot_response}")
 
     except KeyboardInterrupt:
-        message = random.choice(Utils.custom_error_messages)
-        logging.warning(f"Unexpected exit: {message}")
+        message = random.choice(interrupt_messages)
+        simulate_typing(colored(message, "red"))
     except Exception as e:
         handle_exception(e)
+
+
+if __name__ == '__main__':
+    main()
+
 
 
 if __name__ == '__main__':
