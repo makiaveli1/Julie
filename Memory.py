@@ -8,6 +8,8 @@ import re
 
 
 from utils import Utils
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
 
 class BotMemory:
@@ -118,32 +120,38 @@ class BotMemory:
 
         return new_worksheet
 
-    def retrieve_user_data(self, sh, user_id, memory, username):
-        # Validate and format the worksheet name
-        worksheet_name = f"{username}_{user_id}".replace("-", "_")
-        print(f"Debug: Worksheet name: {worksheet_name}")
-        print("Debug: Type of sh:", type(memory.sh))  # Debugging sh
-        print("Debug: sh attributes:", dir(memory.sh))  # Debugging sh
-
-        print("Debug: Type of memory:", type(memory))  # Debugging memory
-        print("Debug: memory attributes:", dir(memory))  # Debugging memory
-
+    def retrieve_user_data(self, sh, user_id, username):
+        logging.debug(f"Debug: Type of sh: {type(sh)}")
+        logging.debug(f"Debug: sh attributes: {dir(sh)}")
         try:
-            # Open the user-specific worksheet
+            worksheet_name = f"{username}_{user_id}".replace("-", "_")
+            logging.debug(f"Debug: Worksheet name: {worksheet_name}")
             user_worksheet = sh.worksheet(worksheet_name)
-
-            # Get all records (each record is a dictionary representing a row)
             past_data = user_worksheet.get_all_records()
-
-            # Debug line
-            print(
-                f"Debug in retrieve_user_data: {type(past_data)}, {past_data}")
-
-            # Return the data if found
+            logging.debug(f"Debug in retrieve_user_data: {type(past_data)}, {past_data}")
             return past_data if past_data else {}
         except Exception as e:
-            print(f"No past data found for this user. Error: {e}")
+            logging.error(f"No past data found for this user. Error: {e}")
             return {}
+        
+        
+    def handle_user_data(self, username, user_id, is_new_user):
+        past_data = None
+        session_data = None
+        try:
+            if username and user_id:  # None-check can be simplified
+                if not is_new_user:
+                    logging.debug(f"In BotMemory: {self.sh}, {user_id}, {username}")
+                    past_data = self.retrieve_user_data(self.sh, user_id, username)
+            
+            session_data = self.capture_session_data(None)  # Assuming this method can handle None
+        except ValueError as ve:
+            logging.error(f"ValueError in handle_user_data: {ve}")
+        except Exception as e:  # General Exception should be the last
+            logging.error(f"Unexpected error in handle_user_data: {e}")
+
+        return past_data, session_data
+
 
     # Reading a cell (A1 notation)
 

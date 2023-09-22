@@ -13,9 +13,36 @@ class Initialize:
         self.load_environment()
         self.memory = self.initialize_memory()
         self.check_api_keys()
-        self.username, self.user_id, self.is_new_user = self.init()
-        self.past_data, self.session_data = self.handle_user_data()
-        self.user_color = self.get_user_color()
+        self.history = []
+        self.username = None
+        self.user_id = None
+        self.is_new_user = None 
+        self.user_color = None
+        self.past_data = None
+        self.session_data = None
+        
+
+        try:
+            Utils.simulate_loading_spinner()
+            Utils.simulate_typing(ascii_art, delay=0.001)
+            
+            Utils.simulate_typing(colored("What do I call you, Senpai?: ", "cyan"))
+            input_username = input().strip()
+
+            self.username, self.user_id, self.is_new_user = self.memory.check_or_generate_user(input_username)
+
+            if self.username is None or self.user_id is None:
+                raise ValueError("Username or User ID is None.")
+
+            self.user_color = self.get_user_color()
+            self.past_data, self.session_data = self.memory.handle_user_data(self.username, self.user_id, self.is_new_user)
+
+
+            print(f"Debug: Is new user? {self.is_new_user}")
+
+        except Exception as e:
+            print(f"Unexpected Error: {e}")
+        
         
 
     @staticmethod
@@ -36,38 +63,7 @@ class Initialize:
             print("All required keys found")
             openai.api_key = os.getenv("OPENAI_API_KEY")
 
-    def init(self):
-        try:
-            Utils.simulate_loading_spinner()
-            Utils.simulate_typing(ascii_art, delay=0.001)
 
-            # Prompt the user for a username
-            Utils.simulate_typing(colored("What do I call you, Senpai?: ", "cyan"))
-            input_username = input().strip()
-
-            # Validate and either fetch or generate the username and user_id
-            username, user_id, is_new_user = self.memory.check_or_generate_user(
-                self.memory.user_worksheet, input_username)
-
-            if username is None or user_id is None:
-                raise ValueError("Username or User ID is None.")
-
-            print(f"Debug: Is new user? {is_new_user}")
-
-            return username, user_id, is_new_user
-
-        except Exception as e:
-            print(f"Unexpected Error: {e}")
-
-
-
-    def handle_user_data(self):
-        past_data = None
-        if not self.is_new_user:
-            past_data = self.memory.retrieve_user_data(
-                self.memory.sh, self.user_id, self.username)
-        session_data = self.memory.capture_session_data(None)
-        return past_data, session_data
 
     @staticmethod
     def get_user_color():
@@ -77,3 +73,4 @@ class Initialize:
             if user_color in ['blue', 'red', 'green']:
                 return user_color
             print("Invalid color choice. Please try again.")
+
