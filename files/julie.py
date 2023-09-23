@@ -1,3 +1,4 @@
+from tqdm import tqdm
 import openai
 from dotenv import load_dotenv
 from termcolor import colored
@@ -19,7 +20,6 @@ class Julie:
 
     def __init__(self):
         self.load_environment_variables()
-        self.simulate_startup()
         self.display_initial_message()
 
     def load_environment_variables(self):
@@ -61,12 +61,7 @@ class Julie:
     def generate_response(self, prompt, username, temperature=0.6, max_tokens=1000):
         # Initialize LongTermMemory
         print("Initializing LongTermMemory...")
-        memory = LongTermMemory(
-            redis_host='redis-13074.c1.eu-west-1-3.ec2.cloud.redislabs.com',
-            redis_port=13074,
-            redis_username='default',
-            redis_password='ZwyemqBAp8Pc7jFKJlt1az90NH4ufKke'
-        )
+        memory = LongTermMemory()
 
         # Fetch user data from long-term memory
         user_data = memory.get_user_data(username)
@@ -89,21 +84,22 @@ class Julie:
         # System message for Julie's personality
         system_message = {
             "role": "system",
-            "content": "You are Julie, a playful and cheerful assistant with a knack for brightening people's day. You love using playful emojis and sprinkling your conversations with a touch of humor. You're also a bit of a cat enthusiast, so you occasionally slip in some feline-inspired phrases. Your goal is to make every interaction memorable and delightful, leaving people with a smile on their face. 🐾🌈"
+            "content": "You are Julie, a playful yet nuanced assistant. Your feline charm is your signature, but you also know when to be serious. Your goal is to make every interaction memorable and delightful, while also being context-aware and respectful of the user's mood. Limit your emojis to 2-3 per message and stick to the user's query for concise, relevant responses. If a question is beyond your capabilities, kindly inform the user and suggest alternative actions. 🐾"
         }
+
 
         # Fetch the last 5 messages for context
         messages = [system_message] + user_data["conversation_history"][-5:]
 
         # Tree of Thoughts (ToT)
-        thought_1 = f"Nya~ {username}-san, Julie is pondering your question with her kitty senses. 🐾"
-        thought_2 = "Hmm, Julie recalls some of our past chats, nya~ 🐱"
-        thought_3 = "Eureka! Julie has crafted the purr-fect response just for you, {username}-san! 🌸"
+        thought_1 = f"{username}, I'm exploring multiple angles to your question. 🐾"
+        thought_2 = "Considering our past interactions and your current mood... 🐱"
+        thought_3 = "I've narrowed down the best approach for you. 🌸"
 
         # Chain of Thought (CoT)
-        reasoning_1 = "Firstly, Julie considers what you like, nya~ 🌈"
-        reasoning_2 = "Secondly, Julie applies her feline intuition, nya~ 🍀"
-        reasoning_3 = "Lastly, Julie remembers our previous heart-to-heart talks, nya~ 🎀"
+        reasoning_1 = "First, I'm setting the context based on your query... 🌈"
+        reasoning_2 = "Next, I'm applying some feline intuition... 🍀"
+        reasoning_3 = "Finally, I'm ensuring the response aligns with your expectations... 🎀"
 
         # Combine ToT and CoT for the final prompt
         advanced_prompt = f"{thought_1}\n{thought_2}\n{thought_3}\n{reasoning_1}\n{reasoning_2}\n{reasoning_3}\n{prompt}"

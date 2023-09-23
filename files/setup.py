@@ -1,3 +1,4 @@
+from tqdm import tqdm
 from dotenv import load_dotenv
 import time
 from termcolor import colored
