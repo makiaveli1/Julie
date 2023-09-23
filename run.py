@@ -207,13 +207,19 @@ class LongTermMemory:
                 "conversation_history": {"type": "array"}
             }
         }
+        self.test_connection(redis_host, redis_port, redis_password, redis_username)
         try:
             self.redis_client = redis.Redis(
                 host=redis_host,
                 port=redis_port,
                 username=redis_username,
-                password=redis_password
+                password=redis_password,
+                socket_timeout=60 
             )
+            self.redis_client.ping()
+            print('Connected!')
+        except redis.ConnectionError:
+            print('Connection failed.')
             logging.info(
                 f"Connected to Redis server at {redis_host}:{redis_port}")
         except redis.exceptions.AuthenticationError:
@@ -301,19 +307,26 @@ class LongTermMemory:
             logging.info(
                 f"Added message to conversation history for {username}")
 
-            # Trim conversation history if it exceeds 100 messages
-            self.redis_client.ltrim(key, 0, 99)
+            # Trim conversation history if it exceeds 5000 messages
+            self.redis_client.ltrim(key, 0, 5000)
             logging.info(f"Trimmed conversation history for {username}")
         except Exception as e:
             logging.error(
                 f"Failed to update conversation history for {username}: {e}")
 
-    def test_connection(self):
+    def test_connection(self, redis_host, redis_port, redis_password, redis_username):
         try:
-            self.redis_client.ping()
-            print("Connected to Redis")
-        except redis.ConnectionError:
-            print("Could not connect to Redis")
+            test_client = redis.Redis(
+                host=redis_host,
+                port=redis_port,
+                username=redis_username,
+                password=redis_password
+            )
+            test_client.ping()
+            logging.info(f"Successfully connected to Redis.")
+        except Exception as e:
+            logging.error(f"Failed to connect to Redis: {e}")
+            raise e
 
 
 class Julie:
@@ -338,17 +351,19 @@ class Julie:
         simulate_typing(ascii_art, delay=0.001)
 
     def display_initial_message(self):
-        initial_message = "Nya~ Hello there! Julie is excited to chat with you. 🐾"
+        initial_message = "Nya~ Hello there Senpai! Julie is excited to chat with you. 🐾"
         simulate_typing(colored(f"Julie: {initial_message}", "green"))
 
     def generate_response(self, prompt, username, temperature=0.6, max_tokens=1000):
         # Initialize LongTermMemory
         print("Initializing LongTermMemory...")
         memory = LongTermMemory(
-            redis_host='redis-16650.c304.europe-west1-2.gce.cloud.redislabs.com',
-            redis_port=16650,
+            redis_host='redis-13074.c1.eu-west-1-3.ec2.cloud.redislabs.com',
+            redis_port=13074,
             redis_username='default',
-            redis_password='nbdYGdrpFBFIvWdR2ChMyPTg4PCCxZ00')
+            redis_password='ZwyemqBAp8Pc7jFKJlt1az90NH4ufKke'
+            )
+
 
         # Fetch user data from long-term memory
         user_data = memory.get_user_data(username)
@@ -365,8 +380,8 @@ class Julie:
             {"role": "user", "content": prompt})
 
         # Trim conversation history if it exceeds 100 messages
-        if len(user_data["conversation_history"]) > 100:
-            user_data["conversation_history"] = user_data["conversation_history"][-100:]
+        if len(user_data["conversation_history"]) > 5000:
+            user_data["conversation_history"] = user_data["conversation_history"][-5000:]
 
         # System message for Julie's personality
         system_message = {
