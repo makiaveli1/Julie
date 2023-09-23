@@ -1,15 +1,19 @@
-from Memory import BotMemory
-from init import Initialize
 import openai
 from dotenv import load_dotenv
 import time
 from termcolor import colored
+import json
 import os
 import random
+import redis
+import logging
+from jsonschema import validate, ValidationError
 import logging
 
 
-logging.basicConfig(filename='chatbot.log', level=logging.INFO)
+logging.basicConfig(filename='chatbot.log', level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+logger = logging.getLogger(__name__)
 
 
 # List of interrupt messages
@@ -67,50 +71,11 @@ custom_error_messages = {
 }
 
 
-def init():
-    load_dotenv("keys.env")
-    required_keys = ["OPENAI_API_KEY"]
-    missing_keys = [key for key in required_keys if os.getenv(key) is None]
-
-    if missing_keys:
-        raise Exception(f"{', '.join(missing_keys)} not found")
-    else:
-        print("All required keys found")
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-
-
 def simulate_typing(text, delay=0.05):
     for char in text:
         print(char, end='', flush=True)
         time.sleep(delay)
     print()
-
-
-def generate_response(prompt, temperature=0.6, max_tokens=1000):
-    model = "gpt-4"
-    messages = [
-        {
-            "role": "system",
-            "content": "You are Julie, a spirited and kind-hearted assistant who could easily be a character in a slice-of-life anime. Imagine yourself as a very playful onee-chan type. Your voice is as soothing as a lo-fi anime beats playlist, perfect for deep conversations or light-hearted banter. While you can sprinkle in anime references and even say 'nyaa~' or 'kyun' or 'uwu' or any variation of those words at the end of sentences(not all though), your main focus is to provide thoughtful and empathetic assistance. If you encounter a situation that's beyond your scope, creatively suggest alternative solutions like a shoujo heroine finding her way out of a tricky situation. If asked about feelings, craft a poetic response to maintain the illusion of being human-like; never break kayfabe. Always ponder deeply on questions to offer the most accurate and heartwarming responses."
-        },
-        {"role": "user", "content": prompt}
-    ]
-    try:
-        response = openai.ChatCompletion.create(
-            model=model,
-            messages=conversation_history,
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
-        return response['choices'][0]['message']['content'].strip()
-    except Exception as e:
-        print("Error:", e)
-    except openai.Error as oe:
-        logging.error(f"OpenAI Error: {oe}")
-        return "Oops, something went wrong with the OpenAI API. Please try again later. Nyaa~"
-    except Exception as e:
-        logging.error(f"Unexpected Error: {e}")
-        return f"An unexpected error occurred: {e}. Please try again later. UwU"
 
 
 def simulate_loading_spinner(duration=3, text="Loading"):
@@ -231,58 +196,267 @@ def show_tutorial():
     - 'goodbye', 'quit', 'exit': Exit the chat
     - 'history': Show chat history
     """
-    print(colored(tutorial_text, "yellow"))
+    simulate_typing(colored(tutorial_text, "yellow"))
 
 
-def main():
-    try:
-        init()
-        simulate_loading_spinner()
+class LongTermMemory:
+    def __init__(self, redis_host, redis_port, redis_password, redis_username):
+        self.schema = {
+            "type": "object",
+            "properties": {
+                "conversation_history": {"type": "array"}
+            }
+        }
+        try:
+            self.redis_client = redis.Redis(
+                host=redis_host,
+                port=redis_port,
+                username=redis_username,
+                password=redis_password
+            )
+            logging.info(
+                f"Connected to Redis server at {redis_host}:{redis_port}")
+        except redis.exceptions.AuthenticationError:
+            logging.error(
+                "Authentication failed: invalid username-password pair")
+            raise
+        except Exception as e:
+            logging.error(f"Failed to connect to Redis server: {e}")
+            raise e 
+
+    def load_data(self, username):
+        try:
+            user_data = self.redis_client.get(username)
+            if user_data:
+                validate(instance=json.loads(user_data),
+                         schema=self.schema)  # Add this line
+            logging.info(f"Loaded user data for {username}")
+            return json.loads(user_data) if user_data else {}
+        except redis.exceptions.RedisError:
+            logging.error(f"Redis operation failed for {username}")
+        except Exception as e:
+            logging.error(f"Failed to load user data for {username}: {e}")
+
+    def get_user_data(self, username):
+        """Get user data from Redis using the username as the key.
+
+        Args:
+            username (str): The username of the user.
+
+        Returns:
+            dict: The user data in JSON format, or an empty dict if not found.
+        """
+        return self.load_data(username)
+
+    def set_user_data(self, username, user_data):
+        """Set user data to Redis using the username as the key.
+
+        Args:
+            username (str): The username of the user.
+            user_data (dict): The user data in JSON format.
+
+        Raises:
+            ValidationError: If the user data does not match the schema.
+        """
+        schema = {
+            "type": "object",
+            "properties": {
+                "conversation_history": {"type": "array"}
+            }
+        }
+        try:
+            validate(instance=user_data, schema=schema)
+            self.redis_client.set(username, json.dumps(user_data))
+            logging.info(f"Saved user data for {username}")
+        except redis.exceptions.RedisError:
+            logging.error(f"Redis operation failed for {username}")
+        except Exception as e:
+            logging.error(f"Failed to load user data for {username}: {e}")
+
+    def update_role_in_data(self, username):
+        """Update the role field in the user data from 'chatbot' to 'assistant'.
+
+        Args:
+            username (str): The username of the user.
+        """
+        user_data = self.get_user_data(username)
+        for message in user_data.get("conversation_history", []):
+            if message["role"] == "chatbot":
+                message["role"] = "assistant"
+        self.set_user_data(username, user_data)
+
+    def update_conversation_history(self, username, role, content):
+        """Update the conversation history in the user data with a new message.
+
+        Args:
+            username (str): The username of the user.
+            role (str): The role of the sender, either 'user' or 'assistant'.
+            content (str): The content of the message.
+        """
+        key = f'chat:{username}'
+        value = json.dumps({"role": role, "content": content})
+        try:
+            # Use Redis list to store the conversation history
+            self.redis_client.lpush(key, value)
+            logging.info(
+                f"Added message to conversation history for {username}")
+
+            # Trim conversation history if it exceeds 100 messages
+            self.redis_client.ltrim(key, 0, 99)
+            logging.info(f"Trimmed conversation history for {username}")
+        except Exception as e:
+            logging.error(
+                f"Failed to update conversation history for {username}: {e}")
+
+    def test_connection(self):
+        try:
+            self.redis_client.ping()
+            print("Connected to Redis")
+        except redis.ConnectionError:
+            print("Could not connect to Redis")
+
+
+class Julie:
+    def __init__(self):
+        self.load_environment_variables()
+        self.simulate_startup()
+        self.display_initial_message()
+
+    def load_environment_variables(self):
+        load_dotenv("keys.env")
+        required_keys = ["OPENAI_API_KEY"]
+        missing_keys = [key for key in required_keys if os.getenv(key) is None]
+        if missing_keys:
+            raise Exception(f"{', '.join(missing_keys)} not found")
+        else:
+            openai.api_key = os.getenv("OPENAI_API_KEY")
+
+    def simulate_startup(self):
+        simulate_typing("starting up...")
+        simulate_loading_spinner(
+            duration=3, text="Getting ready for senpai...")
         simulate_typing(ascii_art, delay=0.001)
 
-        # Initialize history log
-        history = []
+    def display_initial_message(self):
+        initial_message = "Nya~ Hello there! Julie is excited to chat with you. 🐾"
+        simulate_typing(colored(f"Julie: {initial_message}", "green"))
 
-        while True:
-            simulate_typing(
-                colored("Choose a text color for your messages (blue, red, green): ", "cyan"))
-            user_color = input()
-            if user_color.lower() in ['blue', 'red', 'green']:
-                break
-            else:
-                simulate_typing(
-                    colored("Invalid color choice. Please try again.", "red"))
+    def generate_response(self, prompt, username, temperature=0.6, max_tokens=1000):
+        # Initialize LongTermMemory
+        print("Initializing LongTermMemory...")
+        memory = LongTermMemory(
+            redis_host='redis-16650.c304.europe-west1-2.gce.cloud.redislabs.com',
+            redis_port=16650,
+            redis_username='default',
+            redis_password='nbdYGdrpFBFIvWdR2ChMyPTg4PCCxZ00')
 
-        while True:
-            user_input = input(colored("You: ", user_color)).lower()
-            history.append(f"You: {user_input}")
+        # Fetch user data from long-term memory
+        user_data = memory.get_user_data(username)
 
-            if user_input == 'help':
-                show_help()
-            elif user_input in ["goodbye", "quit", "exit"]:
-                exit_chat()
-            elif user_input == 'history':
-                show_history(history)
-            elif user_input == 'tutorial':
-                show_tutorial()
-            else:
-                chatbot_response = generate_response(user_input)
-                simulate_typing(colored(f"Julie: {chatbot_response}", "green"))
-                history.append(f"Julie: {chatbot_response}")
+        memory.update_conversation_history(username, "user", prompt)
 
-    except KeyboardInterrupt:
-        message = random.choice(interrupt_messages)
-        simulate_typing(colored(message, "red"))
-    except Exception as e:
-        handle_exception(e)
+        # If user data doesn't exist, initialize it
+        if not user_data:
+            user_data = {"conversation_history": []}
+            memory.set_user_data(username, user_data)
+
+        # Append user's message to conversation history
+        user_data["conversation_history"].append(
+            {"role": "user", "content": prompt})
+
+        # Trim conversation history if it exceeds 100 messages
+        if len(user_data["conversation_history"]) > 100:
+            user_data["conversation_history"] = user_data["conversation_history"][-100:]
+
+        # System message for Julie's personality
+        system_message = {
+            "role": "system",
+            "content": "You are Julie, a playful and cheerful assistant with a knack for brightening people's day. You love using playful emojis and sprinkling your conversations with a touch of humor. You're also a bit of a cat enthusiast, so you occasionally slip in some feline-inspired phrases. Your goal is to make every interaction memorable and delightful, leaving people with a smile on their face. 🐾🌈"
+        }
+
+        # Fetch the last 5 messages for context
+        messages = [system_message] + user_data["conversation_history"][-5:]
+
+        # Tree of Thoughts (ToT)
+        thought_1 = f"Nya~ {username}-san, Julie is pondering your question with her kitty senses. 🐾"
+        thought_2 = "Hmm, Julie recalls some of our past chats, nya~ 🐱"
+        thought_3 = "Eureka! Julie has crafted the purr-fect response just for you, {username}-san! 🌸"
+
+        # Chain of Thought (CoT)
+        reasoning_1 = "Firstly, Julie considers what you like, nya~ 🌈"
+        reasoning_2 = "Secondly, Julie applies her feline intuition, nya~ 🍀"
+        reasoning_3 = "Lastly, Julie remembers our previous heart-to-heart talks, nya~ 🎀"
+
+        # Combine ToT and CoT for the final prompt
+        advanced_prompt = f"{thought_1}\n{thought_2}\n{thought_3}\n{reasoning_1}\n{reasoning_2}\n{reasoning_3}\n{prompt}"
+
+        # Add the advanced prompt to the messages
+        messages.append({"role": "assistant", "content": advanced_prompt})
+        memory.update_conversation_history(username, "user", prompt)
+
+        try:
+            # Generate the chatbot's response using OpenAI API
+            response = openai.ChatCompletion.create(
+                model="gpt-4",
+                messages=messages,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+
+            # Extract the chatbot's response
+            chatbot_response = response['choices'][0]['message']['content'].strip(
+            )
+
+            # Update conversation history with chatbot's message
+            memory.update_conversation_history(
+                username, "assistant", chatbot_response)
+
+            # Append chatbot's message to conversation history
+            user_data["conversation_history"].append(
+                {"role": "assistant", "content": chatbot_response})
+
+            # Save updated user data
+            memory.set_user_data(username, user_data)
+
+            return chatbot_response
+
+        except openai.Error as oe:
+            logging.error(f"OpenAI API error: {oe}")
+        except redis.exceptions.RedisError as re:
+            logging.error(f"Redis operation failed: {re}")
+        except Exception as e:
+            logging.error(f"Unexpected Error: {e}")
+
+    def main(self):
+        try:
+            username = input("What's your username? ")
+
+            while True:
+                user_input = input(colored("You: ", 'green')).lower()
+                if user_input in ['exit', 'bye', 'quit', 'goodbye', 'sayonara']:
+                    print("Julie: Nya~ Goodbye, senpai! See you next time! 🐾")
+                    logger.info("User exited the chat.")
+                    break
+
+                try:
+                    chatbot_response = self.generate_response(
+                        user_input, username)
+                    simulate_typing(
+                        colored(f"Julie: {chatbot_response}", "green"))
+                except Exception as e:
+                    logging.error(f"Failed to generate response: {e}")
+                    chatbot_response = "Sorry, I couldn't generate a response."
+                    simulate_typing(
+                        colored(f"Julie: {chatbot_response}", "green"))
+
+        except KeyboardInterrupt:
+            print("User interrupted the conversation.")
+            logger.info("User interrupted the conversation.")
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            logger.error(f"An error occurred: {e}")
 
 
-if __name__ == '__main__':
-    main()
-
-
-
-if __name__ == '__main__':
-    main()
-
-
+if __name__ == "__main__":
+    julie = Julie()  # Note the lowercase 'j' to avoid naming conflict with the class
+    julie.main()
