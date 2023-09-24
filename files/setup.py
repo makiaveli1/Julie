@@ -7,6 +7,7 @@ import redis
 import logging
 from jsonschema import validate, ValidationError
 import logging
+from datetime import datetime
 
 
 
@@ -15,6 +16,7 @@ logging.basicConfig(filename='chatbot.log', level=logging.DEBUG,
 logger = logging.getLogger(__name__)
 
 class Setting:
+
     
     def __init__(self) -> None:
         pass
@@ -237,5 +239,25 @@ class Setting:
         - 'history': Show chat history
         """
         self.simulate_typing(colored(tutorial_text, "yellow"))
-
+        
+    
+    user_text_color = None
+    available_colors = ['grey', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
+    @classmethod
+    def get_text_color(cls):
+        if cls.user_text_color:
+            return cls.user_text_color
+        current_hour = datetime.now().hour
+        if 6 <= current_hour < 18:
+            return 'green'
+        else:
+            return 'yellow'
+        
+    def change_text_color(self, new_color):
+        self.text_color = new_color
+    
+    
+    
+    
+    
 

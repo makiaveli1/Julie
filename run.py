@@ -1,38 +1,80 @@
-from tqdm import tqdm
-import openai
-from dotenv import load_dotenv
 from termcolor import colored
 import re
 import random
 import logging
 import click
+import os
+from InquirerPy import prompt
+
 
 from files.julie import Julie  
 from files.setup import Setting
 from files.brain import LongTermMemory  
 
+# Initialize logging
 logging.basicConfig(filename='chatbot.log', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger = logging.getLogger(__name__)
 
+# Initialize objects
 julie = Julie()
-memory = LongTermMemory() 
+memory = LongTermMemory()
+settings = Setting()
+
+# Simulate startup
 julie.simulate_startup()
 
-def main_menu():
-    option = click.prompt(click.style('What would you like to do?', fg='blue'), type=click.Choice(['Chat', 'Settings', 'Exit'], case_sensitive=False))
-    click.echo(click.style(f'You chose: {option.capitalize()}', fg='green'))
-    return option.capitalize()
+def clear_screen():
+    os.system('cls' if os.name == 'nt' else 'clear')
 
-# Enhanced Onboarding Experience using Click
-click.echo(click.style("Welcome to Julie's world!", fg='yellow', bold=True))
-click.echo(click.style("Here's how to interact with Julie:", fg='yellow'))
-click.echo(click.style("1. Choose 'Chat' to start chatting.", fg='green'))
-click.echo(click.style("2. Choose 'Settings' to adjust your preferences.", fg='green'))
+def onboarding_experience():
+    clear_screen()
+    click.echo(click.style("Welcome to Julie's World!", fg=Setting.get_text_color(), bold=True))
+    click.echo(click.style("Here's a quick tutorial:", fg=Setting.get_text_color()))
+    click.echo(click.style("1. Type 'Chat' to start a conversation with Julie.", fg=Setting.get_text_color()))
+    click.echo(click.style("2. Type 'Settings' to adjust your preferences.", fg=Setting.get_text_color()))
+    click.echo(click.style("3. Type 'Exit' to leave the chat.", fg=Setting.get_text_color()))
+    click.echo(click.style("Enjoy your time with Julie!", fg=Setting.get_text_color(), bold=True))
+
+def settings_menu():
+    questions = [
+        {
+            "type": "list",
+            "message": "Choose an option:",
+            "choices": ["Change Text Color", "Back"],
+            "name": "option",
+        },
+        {
+            "type": "list",
+            "message": "Enter new text color:",
+            "choices": Setting.available_colors,
+            "name": "new_color",
+            "when": lambda x: x["option"] == "Change Text Color",
+        },
+    ]
+    result = prompt(questions)  # Corrected function call
+    if result["option"] == "Change Text Color":
+        Setting.user_text_color = result["new_color"]
+    clear_screen()
+
+def main_menu():
+    clear_screen()
+    option = prompt([
+        {
+            "type": "list",
+            "message": "What would you like to do?",
+            "choices": ["Chat", "Settings", "Exit"],
+            "name": "option",
+        }
+    ])["option"]
+    click.echo(click.style(f'You chose: {option.capitalize()}', fg=Setting.get_text_color()))
+    if option == 'Settings':
+        settings_menu()
+    return option.capitalize()
 
 
 class Main:
-    Settings = Setting()
+    Settings = settings 
     memory = memory
     julie = julie
     
@@ -63,7 +105,7 @@ class Main:
                     print("Invalid username. Only alphanumeric characters, hyphens, and underscores are allowed.")
             while True:
                 # Keep the original user input and a lowercase version
-                original_user_input = input(colored("You: ", 'green'))
+                original_user_input = input(colored("You: ", Setting.get_text_color()))
                 user_input = original_user_input.lower()
 
                 if user_input in ['exit', 'bye', 'quit', 'goodbye', 'sayonara']:
@@ -73,9 +115,9 @@ class Main:
 
                 try:
                     chatbot_response = self.julie.generate_response(
-                        original_user_input, username)  # Use the original user input
+                        original_user_input, username)
                     Setting.simulate_typing(
-                        colored(f"Julie: {chatbot_response}", "green"))
+                        colored(f"Julie: {chatbot_response}", Setting.get_text_color()))
                 except Exception as e:
                     logging.error(f"Failed to generate response: {e}")
                     chatbot_response = "Sorry, I couldn't generate a response."
@@ -95,6 +137,12 @@ class Main:
             logger.error(f"An error occurred: {e}")
 
 if __name__ == "__main__":
-    Main().main()
-
+    onboarding_experience()
+    main_instance = Main()
+    while True:
+        user_choice = main_menu()
+        if user_choice == 'Exit':
+            break
+        elif user_choice == 'Chat':
+            main_instance.main()
 

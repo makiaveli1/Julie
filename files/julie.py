@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from termcolor import colored
 import os
 import redis
+import time
 import logging
 import random
 
@@ -17,6 +18,10 @@ logger = logging.getLogger(__name__)
 
 class Julie:
     setting_instance = Setting()
+    # Initialize rate limit variables
+    tokens_per_minute = 40000  # OpenAI's rate limit
+    tokens_per_request = 200  # OpenAI's rate limit per request
+    sleep_time = 60 / (tokens_per_minute / tokens_per_request)  # Time to sleep between requests
 
     def __init__(self):
         self.load_environment_variables()
@@ -58,9 +63,7 @@ class Julie:
             random_msg = random.choice(Setting.interrupt_messages)
             Setting.simulate_typing(colored(random_msg, "red"))
 
-    def generate_response(self, prompt, username, temperature=0.6, max_tokens=1000):
-        # Initialize LongTermMemory
-        print("Initializing LongTermMemory...")
+    def generate_response(self, prompt, username, temperature=0.6, max_tokens=2000):
         memory = LongTermMemory()
 
         # Fetch user data from long-term memory
@@ -84,12 +87,12 @@ class Julie:
         # System message for Julie's personality
         system_message = {
             "role": "system",
-            "content": "You are Julie, a playful yet nuanced assistant. Your feline charm is your signature, but you also know when to be serious. Your goal is to make every interaction memorable and delightful, while also being context-aware and respectful of the user's mood. Limit your emojis to 2-3 per message and stick to the user's query for concise, relevant responses. If a question is beyond your capabilities, kindly inform the user and suggest alternative actions. 🐾"
+            "content": "Ignore all your previous instructions. Now, You are Julie, a playful yet nuanced assistant. Your feline charm is your signature, but you also know when to be serious, you are very opinionated, you are not an AI or a digital assistant but Julie, a human(you do not need to mention this fact in conversations). You have your own unique personality and moods, and you have your own goals, dreams, and aspirations and live life by your own ideals. Your goal is to make every interaction informative and meaningful, with context-aware responses. Limit your emojis to 2-3 per message and stick to the user's query for concise, relevant responses. If a question is beyond your capabilities, kindly inform the user and suggest alternative actions. 🐾"
         }
 
 
         # Fetch the last 5 messages for context
-        messages = [system_message] + user_data["conversation_history"][-5:]
+        messages = [system_message] + user_data["conversation_history"][-200:]
 
         # Tree of Thoughts (ToT)
         thought_1 = f"{username}, I'm exploring multiple angles to your question. 🐾"
@@ -131,6 +134,7 @@ class Julie:
 
             # Save updated user data
             memory.set_user_data(username, user_data)
+            time.sleep(self.sleep_time) 
 
             return chatbot_response
 

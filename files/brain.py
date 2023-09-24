@@ -14,6 +14,15 @@ logging.basicConfig
 
 class LongTermMemory:
     _instance = None
+    
+    def __init__(self):
+        self.schema = {
+            "type": "object",
+            "properties": {
+                "conversation_history": {"type": "array"}
+            }
+        }
+        self.initialize_redis()
 
     def __new__(cls):
         if cls._instance is None:
@@ -38,7 +47,6 @@ class LongTermMemory:
                 socket_timeout=60
             )
             self.redis_client.ping()
-            print('Connected to Redis!')  # For debugging
             logging.info(f"Successfully connected to Redis at {self.redis_host}:{self.redis_port}.")
         except redis.ConnectionError:
             logging.error('Could not connect to Redis. Connection failed.')
@@ -125,10 +133,8 @@ class LongTermMemory:
             # Trim conversation history if it exceeds 5000 messages
             self.redis_client.ltrim(key, 0, 5000)
             logging.info(f"Trimmed conversation history for {username}")
-
-            # Debugging: Log the latest 5 messages
-            recent_history = self.redis_client.lrange(key, 0, 4)  # Fetch the latest 5 messages
-            logging.debug(f"Latest 5 messages for {username}: {recent_history}")
+        except redis.exceptions.RedisError:
+            logging.error(f"Redis operation failed for {username}")
 
         except Exception as e:
             logging.error(f"Failed to update conversation history for {username}: {e}")
