@@ -242,7 +242,7 @@ class Setting:
         
     
     user_text_color = None
-    available_colors = ['grey', 'red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
+    available_colors = ['red', 'green', 'yellow', 'blue', 'magenta', 'cyan', 'white']
     @classmethod
     def get_text_color(cls):
         if cls.user_text_color:
