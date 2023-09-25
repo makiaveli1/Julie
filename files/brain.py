@@ -12,9 +12,10 @@ import logging
 
 logging.basicConfig
 
+
 class LongTermMemory:
     _instance = None
-    
+
     def __init__(self):
         self.schema = {
             "type": "object",
@@ -27,11 +28,13 @@ class LongTermMemory:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(LongTermMemory, cls).__new__(cls)
-            load_dotenv("keys.env")  # Assuming keys.env contains the Redis details
+            # Assuming keys.env contains the Redis details
+            load_dotenv("keys.env")
 
             # Fetch Redis details from .env file
             cls._instance.redis_host = os.getenv("REDIS_HOST")
-            cls._instance.redis_port = int(os.getenv("REDIS_PORT"))  # Converting to int as .env stores it as a string
+            # Converting to int as .env stores it as a string
+            cls._instance.redis_port = int(os.getenv("REDIS_PORT"))
             cls._instance.redis_username = os.getenv("REDIS_USER")
             cls._instance.redis_password = os.getenv("REDIS_PASS")
             cls._instance.initialize_redis()  # Initialize the Redis connection
@@ -47,16 +50,20 @@ class LongTermMemory:
                 socket_timeout=60
             )
             self.redis_client.ping()
-            logging.info(f"Successfully connected to Redis at {self.redis_host}:{self.redis_port}.")
+            logging.info(
+                f"Successfully connected to Redis at {self.redis_host}:{self.redis_port}.")
         except redis.ConnectionError:
             logging.error('Could not connect to Redis. Connection failed.')
-            print('Could not connect to Redis. Connection failed.')  # For debugging
+            # For debugging
+            print('Could not connect to Redis. Connection failed.')
         except redis.exceptions.AuthenticationError:
-            logging.error('Authentication failed: invalid username-password pair.')
-            print('Authentication failed: invalid username-password pair.')  # For debugging
+            logging.error(
+                'Authentication failed: invalid username-password pair.')
+            # For debugging
+            print('Authentication failed: invalid username-password pair.')
         except Exception as e:
             logging.error(f"Failed to connect to Redis: {e}")
-            print(f"Exception: {e}") 
+            print(f"Exception: {e}")
 
     def load_data(self, username):
         try:
@@ -71,12 +78,11 @@ class LongTermMemory:
         except Exception as e:
             logging.error(f"Failed to load user data for {username}: {e}")
 
-
     def get_user_data(self, username):
         user_data = self.load_data(username)
-        logging.debug(f"Fetched user data for {username}: {user_data}")  # Debug log
+        # Debug log
+        logging.debug(f"Fetched user data for {username}: {user_data}")
         return user_data
-    
 
     def set_user_data(self, username, user_data):
         """Set user data to Redis using the username as the key.
@@ -128,7 +134,8 @@ class LongTermMemory:
         try:
             # Use Redis list to store the conversation history
             self.redis_client.lpush(key, value)
-            logging.info(f"Added message to conversation history for {username}")
+            logging.info(
+                f"Added message to conversation history for {username}")
 
             # Trim conversation history if it exceeds 5000 messages
             self.redis_client.ltrim(key, 0, 5000)
@@ -137,8 +144,8 @@ class LongTermMemory:
             logging.error(f"Redis operation failed for {username}")
 
         except Exception as e:
-            logging.error(f"Failed to update conversation history for {username}: {e}")
-
+            logging.error(
+                f"Failed to update conversation history for {username}: {e}")
 
     def test_connection(self, redis_host, redis_port, redis_password, redis_username):
         try:
@@ -153,5 +160,3 @@ class LongTermMemory:
         except Exception as e:
             logging.error(f"Failed to connect to Redis: {e}")
             raise e
-
-

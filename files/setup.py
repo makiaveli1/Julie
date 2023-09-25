@@ -249,9 +249,9 @@ class Setting:
             return cls.user_text_color
         current_hour = datetime.now().hour
         if 6 <= current_hour < 18:
-            return 'green'
+            return 'blue'
         else:
-            return 'yellow'
+            return 'white'
         
     def change_text_color(self, new_color):
         self.text_color = new_color
