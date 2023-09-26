@@ -52,18 +52,16 @@ class LongTermMemory:
             self.redis_client.ping()
             logging.info(
                 f"Successfully connected to Redis at {self.redis_host}:{self.redis_port}.")
-        except redis.ConnectionError:
+        except redis.ConnectionError as e:
             logging.error('Could not connect to Redis. Connection failed.')
-            # For debugging
-            print('Could not connect to Redis. Connection failed.')
-        except redis.exceptions.AuthenticationError:
+            raise e
+        except redis.exceptions.AuthenticationError as e:
             logging.error(
                 'Authentication failed: invalid username-password pair.')
-            # For debugging
-            print('Authentication failed: invalid username-password pair.')
+            raise e
         except Exception as e:
             logging.error(f"Failed to connect to Redis: {e}")
-            print(f"Exception: {e}")
+            raise e
 
     def load_data(self, username):
         try:
@@ -73,10 +71,12 @@ class LongTermMemory:
                          schema=self.schema)
             logging.info(f"Loaded user data for {username}")
             return json.loads(user_data) if user_data else {}
-        except redis.exceptions.RedisError:
+        except redis.exceptions.RedisError as e:
             logging.error(f"Redis operation failed for {username}")
+            raise e
         except Exception as e:
             logging.error(f"Failed to load user data for {username}: {e}")
+            raise e
 
     def get_user_data(self, username):
         user_data = self.load_data(username)
@@ -104,10 +104,12 @@ class LongTermMemory:
             validate(instance=user_data, schema=schema)
             self.redis_client.set(username, json.dumps(user_data))
             logging.info(f"Saved user data for {username}")
-        except redis.exceptions.RedisError:
+        except redis.exceptions.RedisError as e:
             logging.error(f"Redis operation failed for {username}")
+            raise e
         except Exception as e:
             logging.error(f"Failed to load user data for {username}: {e}")
+            raise e
 
     def update_role_in_data(self, username):
         """Update the role field in the user data from 'chatbot' to 'assistant'.
@@ -140,12 +142,14 @@ class LongTermMemory:
             # Trim conversation history if it exceeds 5000 messages
             self.redis_client.ltrim(key, 0, 5000)
             logging.info(f"Trimmed conversation history for {username}")
-        except redis.exceptions.RedisError:
+        except redis.exceptions.RedisError as e:
             logging.error(f"Redis operation failed for {username}")
+            raise e
 
         except Exception as e:
             logging.error(
                 f"Failed to update conversation history for {username}: {e}")
+            raise e
 
     def test_connection(self, redis_host, redis_port, redis_password, redis_username):
         try:
@@ -160,3 +164,4 @@ class LongTermMemory:
         except Exception as e:
             logging.error(f"Failed to connect to Redis: {e}")
             raise e
+

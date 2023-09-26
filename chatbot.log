@@ -43,3 +43,45 @@
 2023-09-26 17:09:14,953 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
 2023-09-26 17:09:15,036 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
 2023-09-26 17:09:15,060 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 17:36:52,815 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:36:52,983 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:36:53,049 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 17:43:21,867 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:43:22,010 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:43:22,037 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 17:50:23,295 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:50:24,835 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:50:24,862 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 17:51:30,674 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:51:31,430 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:51:31,454 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 17:56:18,490 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:56:18,578 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:56:18,607 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 17:59:25,012 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:59:25,236 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 17:59:25,263 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 18:00:34,513 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:00:34,599 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:00:34,622 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 18:20:44,030 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:20:44,229 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:20:44,316 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 18:21:05,599 ERROR __main__ Failed to get username: 
+2023-09-26 18:24:18,482 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:24:18,769 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:24:18,796 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 18:24:29,481 ERROR __main__ Failed to get username: 
+2023-09-26 18:37:58,898 INFO files.setup User interrupted the conversation.
+2023-09-26 18:38:09,009 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:38:09,096 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:38:09,150 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 18:38:25,977 ERROR __main__ Failed to get username: 
+2023-09-26 18:38:47,811 INFO files.setup User interrupted the conversation.
+2023-09-26 18:38:56,101 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:38:56,218 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:38:56,241 DEBUG asyncio Using proactor: IocpProactor
+2023-09-26 18:39:07,045 ERROR __main__ Failed to get username: 
+2023-09-26 18:46:21,883 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:46:21,968 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-26 18:46:21,991 DEBUG asyncio Using proactor: IocpProactor
