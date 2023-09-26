@@ -103,8 +103,10 @@ def main_menu():
             f'You chose: {option.capitalize()}', fg=Setting.get_text_color()))
         if option == 'Settings':
             settings_menu()
+            return main_menu()
         elif option == 'Help':
             display_help_menu()
+            return main_menu()
         return option.capitalize()
     except KeyboardInterrupt:
         random_msg = random.choice(Setting.interrupt_messages)

@@ -32,6 +32,11 @@ class Julie:
             self.load_environment_variables()
             self.display_initial_message()
             self.simulate_startup()
+        except KeyboardInterrupt:
+            random_msg = random.choice(Setting.interrupt_messages)
+            Setting.simulate_typing(colored(random_msg, "red"))
+            logger.info("User interrupted the conversation.")
+            return
         except Exception as e:
             logger.exception("An error occurred during initialization.")
 
@@ -44,6 +49,11 @@ class Julie:
                 raise Exception(f"{', '.join(missing_keys)} not found")
             else:
                 openai.api_key = os.getenv("OPENAI_API_KEY")
+        except KeyboardInterrupt:
+            random_msg = random.choice(Setting.interrupt_messages)
+            Setting.simulate_typing(colored(random_msg, "red"))
+            logger.info("User interrupted the conversation.")
+            return
         except Exception as e:
             logger.exception("An error occurred while loading environment variables.")
 
@@ -53,10 +63,11 @@ class Julie:
             Setting.simulate_typing(text="Getting ready for senpai...")
             Setting.simulate_typing(
                 self.setting_instance.ascii_art, delay=0.005)
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             random_message = random.choice(Setting.interrupt_messages)
             Setting.simulate_typing(colored(random_message, "red"))
             logger.debug("Setting interrupted the conversation.")
+            return
         except Exception as e:
             logger.exception("An unknown error occurred during startup.")
             error_message = random.choice(Setting.custom_error_messages.get(
@@ -68,10 +79,11 @@ class Julie:
             initial_message = "Nya~ Hello there Senpai! Julie is excited to chat with you. 🐾"
             Setting.simulate_typing(
                 colored(f"Julie: {initial_message}", "green"))
-        except KeyboardInterrupt as e:
+        except KeyboardInterrupt:
             random_msg = random.choice(Setting.interrupt_messages)
             Setting.simulate_typing(colored(random_msg, "red"))
             logger.info("User interrupted the conversation.")
+            return
         except Exception as e:
             logger.exception("An error occurred while displaying the initial message.")
             random_msg = random.choice(Setting.interrupt_messages)
@@ -121,6 +133,11 @@ class Julie:
 
             return chatbot_response
 
+        except KeyboardInterrupt:
+            random_msg = random.choice(Setting.interrupt_messages)
+            Setting.simulate_typing(colored(random_msg, "red"))
+            logger.info("User interrupted the conversation.")
+            return
         except openai.Error as oe:
             logging.error(f"OpenAI API error: {oe}")
         except redis.exceptions.RedisError as re:
@@ -168,6 +185,12 @@ class Julie:
             messages = [system_message] + last_200_messages
 
             return messages
+        except KeyboardInterrupt:
+            random_msg = random.choice(Setting.interrupt_messages)
+            Setting.simulate_typing(colored(random_msg, "red"))
+            logger.info("User interrupted the conversation.")
+            return
         except Exception as e:
             logger.exception("An error occurred while preparing the advanced prompt.")
+
 
