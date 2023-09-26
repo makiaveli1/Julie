@@ -1,4 +1,4 @@
-from menu import main_menu, onboarding_experience
+from files.menu import main_menu
 from files.julie import Julie
 from files.setup import Setting
 from files.brain import LongTermMemory
@@ -88,7 +88,6 @@ class Main:
 
 
 if __name__ == "__main__":
-    onboarding_experience()
     main_instance = Main()
     while True:
         user_choice = main_menu()

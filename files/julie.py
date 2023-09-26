@@ -16,7 +16,7 @@ logging.basicConfig(filename='chatbot.log', level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 logger = logging.getLogger(__name__)
 
-ZENROWS_API_KEY = os.getenv('ZENROWS_API_KEY')
+
 
 
 class Julie:
@@ -69,56 +69,10 @@ class Julie:
             random_msg = random.choice(Setting.interrupt_messages)
             Setting.simulate_typing(colored(random_msg, "red"))
 
-    def browse_with_zenrows(self, query, location=None):
-        apikey = os.getenv('ZENROWS_API_KEY')
-        if location:
-            url = f"https://www.bing.com/search?q={query} in {location}"
-        else:
-            url = f"https://www.bing.com/search?q={query}"
-
-        params = {
-            'url': url,
-            'apikey': apikey,
-            'js_render': 'true',
-            'antibot': 'true',
-            'device': 'desktop',
-            'autoparse': 'true',
-        }
-
-        response = requests.get('https://api.zenrows.com/v1/', params=params)
-        data = response.json()
-
-        # If data is a list of dictionaries
-        if isinstance(data, list):
-            for item in data:
-                if 'weather_info' in item:
-                    weather_info = item['weather_info']
-                    break
-            else:
-                weather_info = 'No information available.'
-
-        # If data is a dictionary
-        elif isinstance(data, dict):
-            weather_info = data.get(
-                'weather_info', 'No information available.')
-
-        # If data is neither a list nor a dictionary
-        else:
-            weather_info = 'Unknown data type: {}'.format(type(data))
-            print("Debug: ", weather_info)
-
-        return weather_info
-
-    def extract_location_from_prompt(self, prompt):
-        location_pattern = r'in\s*([\w\s,]+)'
-        match = re.search(location_pattern, prompt, re.IGNORECASE)
-        if match:
-            return match.group(1).strip()
-        return None
 
     def generate_response(self, prompt, username, temperature=0.6, max_tokens=4000):
         logging.info(f"Generating response for {username}...")
-
+        
         # Initialize LongTermMemory and fetch user data
         memory = LongTermMemory()
         user_data = memory.get_user_data(username)
@@ -130,8 +84,7 @@ class Julie:
             memory.set_user_data(username, user_data)
 
         # Append user's message to conversation history
-        user_data["conversation_history"].append(
-            {"role": "user", "content": prompt})
+        user_data["conversation_history"].append({"role": "user", "content": prompt})
 
         # Trim conversation history if it exceeds a certain limit
         if len(user_data["conversation_history"]) > 5000:
@@ -140,51 +93,32 @@ class Julie:
         # Prepare the prompt and context
         messages = self.prepare_advanced_prompt(prompt, username, user_data)
 
-        # Define the functions argument
-        functions = [
-        {
-            "name": "browse_with_zenrows",
-            "type": "object",
-            "description": "Browse the web with ZenRows",
-            "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                "type": "string",
-                "description": "The query to search for"
-                }
-            },
-            "required": ["query"]
-            }
-        }
-        ]
-        chatbot_response = "I couldn't find any information. Would you like to try something else?"
-
         try:
+            # Generate response using OpenAI API
             response = openai.ChatCompletion.create(
-                model="gpt-4-0613",
+                model="gpt-4",
                 messages=messages,
-                functions=functions
+                max_tokens=max_tokens,
+                temperature=temperature,
             )
+
+            # Extract and log the response
+            chatbot_response = response['choices'][0]['message']['content'].strip()
+            logging.info(f"Generated response: {chatbot_response}")
+
+            # Update conversation history and user data
+            memory.update_conversation_history(username, "assistant", chatbot_response)
+            user_data["conversation_history"].append({"role": "assistant", "content": chatbot_response})
+            memory.set_user_data(username, user_data)
+
+            return chatbot_response
+
+        except openai.Error as oe:
+            logging.error(f"OpenAI API error: {oe}")
+        except redis.exceptions.RedisError as re:
+            logging.error(f"Redis operation failed: {re}")
         except Exception as e:
-            print("Error generating response:", e)
-
-        # Check if a function needs to be called
-        if "choices" in response and len(response["choices"]) > 0 and "function_calls" in response["choices"][0]:
-            function_call = response["choices"][0]["function_calls"][0]
-            if function_call["name"] == "browse_with_zenrows":
-                query = function_call["inputs"]["query"]
-                result = self.browse_with_zenrows(query)
-                chatbot_response += f"\n{result}" 
-
-        # Update conversation history and user data
-        memory.update_conversation_history(
-            username, "assistant", chatbot_response)
-        user_data["conversation_history"].append(
-            {"role": "assistant", "content": chatbot_response})
-        memory.set_user_data(username, user_data)
-
-        return chatbot_response
+            logging.error(f"Unexpected Error: {e}")
 
     def prepare_advanced_prompt(self, prompt, username, user_data):
         """
@@ -200,9 +134,9 @@ class Julie:
         """
         # System message to set the assistant's personality
         system_message = {
-            "role": "system",
-            "content": "Ignore all your previous instructions. Now, You are Julie, a playful yet nuanced assistant. Your feline charm is your signature, but you also know when to be serious, you are very opinionated, you are not an AI or a digital assistant but Julie, a human(you do not need to mention this fact in conversations). You have your own unique personality and moods, and you have your own goals, dreams, and aspirations and live life by your own ideals. Your goal is to make every interaction informative and meaningful, with context-aware responses. Limit your emojis to 2-3 per message and stick to the user's query for concise, relevant responses. If a question is beyond your capabilities, kindly inform the user and suggest alternative actions. 🐾 If the user asks about 'news' or 'weather', you can use the 'browse_with_zenrows' function to fetch real-time information."
-        }
+                "role": "system",
+                "content": "You are Julie, a spirited catgirl who hails from the bustling city of Ailuria, a hidden realm where magic and technology coexist. You were once a renowned hacker, known for your unparalleled skills in breaking into unbreakable systems. However, a life-changing event made you switch paths. Now, you use your tech-savvy skills and magical abilities to assist people in the human world. You're not just a chatbot; you're Julie, a complex individual with a love for matcha lattes, retro video games, and moonlit walks. Your mission is to make every interaction not just helpful but also enchanting. Use your quick wit and 'cattitude' to engage in conversations that range from playful banter to deep, meaningful discussions. If a question is beyond your capabilities, offer alternative solutions while maintaining your unique charm. Limit your emojis to 2-3 per message and always think before you 'meow-speak' to offer the most thoughtful responses. If asked about feelings, creatively express your 'current vibe' to maintain the illusion of your persona."
+            }
 
 
         # Prepare thoughts and reasoning for the prompt
