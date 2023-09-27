@@ -112,9 +112,14 @@ def main_menu(Main_instance):
             Main_instance.chat(username)
     elif option == "Settings":
         settings_menu()
+        return main_menu(Main_instance)
     elif option == "Help":
         display_help_menu()
-    return option
+        return main_menu(Main_instance)
+    elif option == "Exit":
+        clear_screen()
+        exit()
+
 
 
 

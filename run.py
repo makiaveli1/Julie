@@ -25,31 +25,8 @@ class Main:
         self.run()
 
     def run(self):
-        while True:
-            try:
-                clear_screen()  # Clear screen before displaying menu
-                option = main_menu(self)  # Passing self to main_menu
+        main_menu(Main_instance=self)
 
-                if option == "Exit":
-                    exit()
-
-                elif option == "Chat":
-                    username = self.get_username()
-                    if username:
-                        self.chat(username)
-
-                elif option == "Settings":
-                    settings_menu()
-
-                elif option == "Help":
-                    display_help_menu()
-
-            except KeyboardInterrupt as e:
-                random_msg = random.choice(Setting.interrupt_messages)
-                Setting.simulate_typing(colored(random_msg, "red"))
-                logging.info("User interrupted the conversation.")
-            except Exception as e:
-                logging.error(f"An error occurred: {e}")
 
     def chat(self, username):
         try:
@@ -66,9 +43,7 @@ class Main:
                 if not user_input:
                     return
                 if user_input in ["exit", "bye", "quit", "goodbye", "sayonara"]:
-                    self.exit_chat()
-                    return
-                self.respond_to_user(user_input, username)
+                    return main_menu(Main_instance=self)
         except KeyboardInterrupt as e:
             random_msg = random.choice(Setting.interrupt_messages)
             Setting.simulate_typing(colored(random_msg, "red"))
