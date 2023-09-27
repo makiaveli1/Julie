@@ -1,4 +1,5 @@
-from files.menu import main_menu
+
+from files.menu import main_menu, clear_screen, display_help_menu, settings_menu
 from files.julie import Julie
 from files.setup import Setting
 from files.brain import LongTermMemory
@@ -8,53 +9,72 @@ import re
 import random
 from termcolor import colored
 
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(message)s", level=logging.INFO
+)
+
+Settings = Setting
+memory = LongTermMemory()
 
 class Main:
-    """
-    The Main class is responsible for running the chatbot. It handles user interactions,
-    including receiving user input, generating responses, and managing the chat session.
-    """
 
-    Settings = Setting
-    memory = LongTermMemory()
-    julie = Julie()
+    def __init__(self):
+        self.memory = LongTermMemory()
+        self.julie = Julie()
+        self.settings = Settings()
+        self.run()
 
-    def main(self):
-        """
-        The main method of the Main class. It runs the chatbot, handling user input and
-        generating responses until the user chooses to exit the chat.
-        """
+    def run(self):
+        while True:
+            try:
+                clear_screen()  # Clear screen before displaying menu
+                option = main_menu(self)  # Passing self to main_menu
+
+                if option == "Exit":
+                    exit()
+
+                elif option == "Chat":
+                    username = self.get_username()
+                    if username:
+                        self.chat(username)
+
+                elif option == "Settings":
+                    settings_menu()
+
+                elif option == "Help":
+                    display_help_menu()
+
+            except KeyboardInterrupt as e:
+                random_msg = random.choice(Setting.interrupt_messages)
+                Setting.simulate_typing(colored(random_msg, "red"))
+                logging.info("User interrupted the conversation.")
+            except Exception as e:
+                logging.error(f"An error occurred: {e}")
+
+    def chat(self, username):
         try:
-            user_choice = self.get_user_choice()
-            if user_choice == "Exit":
-                self.exit_chat()
-                return
-            username = self.get_username()
-            if not username:
-                return
             user_data = self.get_user_data(username)
             if not user_data:
-                return
+                click.echo("Initializing a new conversation.")
+                user_data = {"conversation_history": []}
+                self.memory.set_user_data(username, user_data)
+
             self.greet_user(username, user_data)
 
             while True:
                 user_input = self.get_user_input()
                 if not user_input:
                     return
-                if user_input in [
-                    "exit",
-                    "bye",
-                    "quit",
-                    "goodbye",
-                    "sayonara",
-                ]:
+                if user_input in ["exit", "bye", "quit", "goodbye", "sayonara"]:
                     self.exit_chat()
-                    break
+                    return
                 self.respond_to_user(user_input, username)
         except KeyboardInterrupt as e:
             random_msg = random.choice(Setting.interrupt_messages)
             Setting.simulate_typing(colored(random_msg, "red"))
             logging.info("User interrupted the conversation.")
+
+
 
     def get_user_choice(self):
         """
@@ -75,6 +95,7 @@ class Main:
                 "Julie: Nya~ Goodbye, senpai! See you next time! 🐾", fg="red"
             )
         )
+        return self.julie.exit_chat()
 
     def get_username(self):
         """
@@ -155,18 +176,16 @@ class Main:
 
 if __name__ == "__main__":
     main_instance = Main()
-    while True:
-        try:
+    try:
+        while True:
             user_choice = main_instance.get_user_choice()
             if user_choice == "Exit":
                 break
             elif user_choice == "Chat":
                 main_instance.main()
-        except KeyboardInterrupt as e:
-            random_msg = random.choice(Setting.interrupt_messages)
-            Setting.simulate_typing(colored(random_msg, "red"))
-            logging.info("User interrupted the conversation.")
-        except Exception as e:
-            logging.error(f"An error occurred in main: {e}")
-
-
+    except KeyboardInterrupt as e:
+        random_msg = random.choice(Setting.interrupt_messages)
+        Setting.simulate_typing(colored(random_msg, "red"))
+        logging.info("User interrupted the conversation.")
+    except Exception as e:
+        logging.error(f"An error occurred in main: {e}")

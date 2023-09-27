@@ -1,3 +1,4 @@
+
 import click
 import os
 import shutil
@@ -7,44 +8,20 @@ from termcolor import colored
 from files.setup import Setting
 import random
 
-
 def clear_screen():
-    """
-    Clears the terminal screen.
-    """
     os.system("cls" if os.name == "nt" else "clear")
 
-
 def center_text(text):
-    """
-    Centers the given text according to the terminal width.
-
-    Args:
-        text (str): The text to be centered.
-
-    Returns:
-        str: The centered text.
-    """
     terminal_width = shutil.get_terminal_size().columns
     centered_text = text.center(terminal_width)
     return centered_text
 
-
 def display_menu_content(content):
-    """
-    Displays the menu content in a formatted manner.
-
-    Args:
-        content (dict): The content to be displayed. The keys are the titles and the values are the descriptions.
-    """
     for title, description in content.items():
         print(center_text(f"\n🌟 {title} 🌟"))
-        print(
-            center_text("--------------------------------------------------")
-        )
+        print(center_text("--------------------------------------------------"))
         for line in description:
             print(center_text(line))
-
 
 def display_help_menu():
     """
@@ -94,9 +71,7 @@ def display_help_menu():
 
 
 def settings_menu():
-    """
-    Displays the settings menu where the user can change the text color.
-    """
+    clear_screen()  # Clear screen before displaying settings
     questions = [
         {
             "type": "list",
@@ -115,43 +90,31 @@ def settings_menu():
     result = prompt(questions)
     if result.get("option") == "Change Text Color":
         Setting.user_text_color = result["new_color"]
+        print("Text color changed successfully!")
     clear_screen()
 
+def main_menu(Main_instance):
+    clear_screen()  # Clear screen before displaying main menu
+    option = prompt(
+        [
+            {
+                "type": "list",
+                "message": "What would you like to do?",
+                "choices": ["Chat", "Settings", "Help", "Exit"],
+                "name": "option",
+            }
+        ]
+    ).get("option")
 
-def main_menu():
-    """
-    Displays the main menu where the user can choose to chat, change settings, view help, or exit.
+    if option == "Chat":
+        username = Main_instance.get_username()
+        if username:
+            Main_instance.chat(username)
+    elif option == "Settings":
+        settings_menu()
+    elif option == "Help":
+        display_help_menu()
+    return option
 
-    Returns:
-        str: The option chosen by the user.
-    """
-    clear_screen()
-    try:
-        option = prompt(
-            [
-                {
-                    "type": "list",
-                    "message": "What would you like to do?",
-                    "choices": ["Chat", "Settings", "Help", "Exit"],
-                    "name": "option",
-                }
-            ]
-        ).get("option")
-        click.echo(
-            click.style(
-                f"You chose: {option.capitalize()}",
-                fg=Setting.get_text_color(),
-            )
-        )
-        if option == "Settings":
-            settings_menu()
-            return main_menu()
-        elif option == "Help":
-            display_help_menu()
-            return main_menu()
-        return option.capitalize()
-    except KeyboardInterrupt:
-        random_msg = random.choice(Setting.interrupt_messages)
-        Setting.simulate_typing(colored(random_msg, "red"))
-        return "Exit"
+
 

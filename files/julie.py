@@ -10,6 +10,7 @@ import requests
 
 from files.brain import LongTermMemory
 
+
 from files.setup import Setting
 
 logging.basicConfig(
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 
 class Julie:
+    
     """
     Julie is a chatbot class that interacts with the user.
     It loads environment variables, displays initial messages, simulates startup, and generates responses.
@@ -33,6 +35,7 @@ class Julie:
     sleep_time = 60 / (tokens_per_minute / tokens_per_request)
 
     def __init__(self):
+       
         """
         Constructor for the Julie class.
         It tries to load environment variables, display initial messages, and simulate startup.
@@ -42,6 +45,8 @@ class Julie:
             self.load_environment_variables()
             self.display_initial_message()
             self.simulate_startup()
+            
+            
         except KeyboardInterrupt:
             random_msg = random.choice(Setting.interrupt_messages)
             Setting.simulate_typing(colored(random_msg, "red"))
