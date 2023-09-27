@@ -25,14 +25,16 @@ class Main:
         self.run()
 
     def run(self):
-        main_menu(Main_instance=self)
+        try:
+            main_menu(Main_instance=self)
+        except Exception as e:
+            logging.error(f"An error occurred in run: {e}")
 
 
     def chat(self, username):
         try:
             user_data = self.get_user_data(username)
             if not user_data:
-                click.echo("Initializing a new conversation.")
                 user_data = {"conversation_history": []}
                 self.memory.set_user_data(username, user_data)
 
@@ -43,11 +45,13 @@ class Main:
                 if not user_input:
                     return
                 if user_input in ["exit", "bye", "quit", "goodbye", "sayonara"]:
-                    return main_menu(Main_instance=self)
+                    return main_menu(main_instance=self)
+                self.respond_to_user(user_input, username)  # Call the response generation method here
         except KeyboardInterrupt as e:
             random_msg = random.choice(Setting.interrupt_messages)
             Setting.simulate_typing(colored(random_msg, "red"))
             logging.info("User interrupted the conversation.")
+
 
 
 
@@ -57,7 +61,7 @@ class Main:
         displaying the menu, it logs the error.
         """
         try:
-            return main_menu()
+            return main_menu(Main_instance=self)
         except Exception as e:
             logging.error(f"Failed to display main menu: {e}")
 
@@ -91,7 +95,9 @@ class Main:
         while getting the user data, it logs the error.
         """
         try:
-            return self.memory.get_user_data(username.lower())
+            user_data = self.memory.get_user_data(username.lower())
+            logging.info(f"Retrieved user data for {username}: {user_data}")
+            return user_data
         except Exception as e:
             logging.error(f"Failed to get user data: {e}")
 
@@ -118,6 +124,7 @@ class Main:
         Prompts the user for their input and returns it. If an error occurs while
         getting the user input, it logs the error.
         """
+        attempts = 0  # To keep track of the number of failed attempts
         while True:
             try:
                 # Keep the original user input and a lowercase version
@@ -127,6 +134,13 @@ class Main:
                 return original_user_input.lower()
             except Exception as e:
                 logging.error(f"Failed to get user input: {e}")
+                attempts += 1  # Increment the number of failed attempts
+                
+                # Exit loop after 3 failed attempts
+                if attempts >= 3:
+                    logging.error("Too many failed attempts to get user input.")
+                    break
+
 
     def respond_to_user(self, user_input, username):
         """
