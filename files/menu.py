@@ -27,10 +27,18 @@ def display_help_menu():
     """
     Displays the help menu with a brief introduction about Julie and the guidelines for interacting with the main menu.
     """
+    terminal_width = 80  # As per your settings
+
     f = Figlet(font="slant")
     title_ascii = f.renderText("Julie's world")
-    print(center_text(title_ascii))
-    print(center_text("🐾🌟🐾🌟🐾🌟🐾🌟🐾🌟🐾"))
+
+    # Center-align ASCII art
+    for line in title_ascii.split("\n"):
+        padding = (terminal_width - len(line)) // 2
+        print(" " * padding + line)
+
+    # Center-align header separator
+    print(" " * ((terminal_width - 24) // 2) + "🐾🌟🐾🌟🐾🌟🐾🌟🐾🌟🐾")
 
     content = {
         "WHO IS JULIE?": [
@@ -59,15 +67,33 @@ def display_help_menu():
         ],
     }
 
-    display_menu_content(content)
 
-    print(
-        center_text(
-            "\nLet's make your day not just better, but enchanting! 😸"
-        )
-    )
-    print(center_text("🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾"))
-    input(center_text("Press Enter to continue..."))
+    for title, description in content.items():
+        # Center-align each title
+        padding = (terminal_width - len(title) - 4) // 2  # 4 is for the 🌟 emojis
+        print("\n" + " " * padding + f"🌟 {title} 🌟")
+
+        # Center-align the separator line
+        print(" " * ((terminal_width - 50) // 2) + "-" * 50)
+
+        for line in description:
+            # Center-align each line
+            padding = (terminal_width - len(line)) // 2
+            print(" " * padding + line)
+
+    # Center-align the footer text and emojis
+    footer_text = "Let's make your day not just better, but enchanting! 😸"
+    padding = (terminal_width - len(footer_text)) // 2
+    print("\n" + " " * padding + footer_text)
+
+    footer_emojis = "🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾🐾"
+    padding = (terminal_width - len(footer_emojis)) // 2
+    print(" " * padding + footer_emojis)
+
+    # Center-align the prompt
+    prompt_text = "Press Enter to continue..."
+    padding = (terminal_width - len(prompt_text)) // 2
+    input(" " * padding + prompt_text)
 
 
 def settings_menu():

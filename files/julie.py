@@ -91,7 +91,7 @@ class Julie:
             Setting.simulate_loading_spinner(text="Starting up...")
             Setting.simulate_typing(text="Getting ready for senpai...")
             Setting.simulate_typing(
-                self.setting_instance.ascii_art, delay=0.005
+                self.setting_instance.ascii_art, delay=0.001
             )
         except KeyboardInterrupt:
             random_message = random.choice(Setting.interrupt_messages)

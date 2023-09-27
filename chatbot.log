@@ -1,0 +1,12 @@
+2023-09-27 09:23:20,474 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-27 09:23:20,556 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-27 09:23:20,644 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-27 09:23:56,231 DEBUG asyncio Using proactor: IocpProactor
+2023-09-27 09:30:56,869 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-27 09:30:56,965 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-27 09:30:57,259 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-27 09:31:11,394 DEBUG asyncio Using proactor: IocpProactor
+2023-09-27 09:32:27,320 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-27 09:32:27,409 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-27 09:32:27,510 INFO root Successfully connected to Redis at redis-12597.c77.eu-west-1-1.ec2.cloud.redislabs.com:12597.
+2023-09-27 09:32:41,694 DEBUG asyncio Using proactor: IocpProactor
