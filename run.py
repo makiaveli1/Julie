@@ -6,6 +6,7 @@ import click
 import logging
 import re
 import random
+import time 
 from termcolor import colored
 
 # Improved logging format with added filename
@@ -37,6 +38,7 @@ class Main:
         except KeyboardInterrupt as e:
             random_msg = random.choice(Settings.interrupt_messages)
             Settings.simulate_typing(colored(random_msg, "red"))
+            return self.exit_chat()
         except Exception as e:
             logging.exception("An error occurred in run")
             print("""Sorry, something went wrong.
@@ -63,6 +65,7 @@ class Main:
         except KeyboardInterrupt as e:
             random_msg = random.choice(Settings.interrupt_messages)
             Settings.simulate_typing(colored(random_msg, "red"))
+            return self.exit_chat()
         except Exception as e:
             logging.exception("""An error occurred
                               during the chat session.""")
@@ -75,6 +78,7 @@ class Main:
         except KeyboardInterrupt as e:
             random_msg = random.choice(Settings.interrupt_messages)
             Settings.simulate_typing(colored(random_msg, "red"))
+            return self.exit_chat()
         except Exception as e:
             logging.exception("Failed to display main menu")
             print("""Sorry, we're having trouble
@@ -99,42 +103,47 @@ class Main:
         while True:
             try:
                 username_raw = click.prompt(click.style(
-                    """What's your username?""",
-                                            fg="blue")).strip()
+                    "What's your username?",
+                    fg="blue")).strip()
                 # Normalize the username
                 normalized_username = username_raw.lower()
 
                 # Validate the username
                 if not self.is_valid_username(normalized_username):
                     print("""Invalid username. Please use only letters,
-                          numbers, and underscores,
-                          between 3 to 25 characters.""")
+                        numbers, and underscores,
+                        between 3 to 25 characters.""")
                     continue
 
                 # For returning users, check if the username exists
                 if not new_user and not self.memory.does_username_exist(
-                             normalized_username):
-                    print("""Username does not exist.
-                          Please check your username or
-                          register as a new user.""")
-                    continue
+                            normalized_username):
+                    print(
+                        """Username does not exist.
+                        Please check your username or
+                        register as a new user.""")
+                    time.sleep(2)  # Wait for 2 seconds before clearing the screen
+                    clear_screen()
+                    return self.register_new_user()
 
                 # For new users, ensure the username is not taken
                 if new_user and self.memory.does_username_exist(
-                                 normalized_username):
-                    print("""Username already taken.
-                          Please choose a different one.""")
+                                normalized_username):
+                    print(
+                        """Username already taken.
+                        Please choose a different one.""")
                     continue
-
                 return normalized_username
             except KeyboardInterrupt as e:
                 random_msg = random.choice(Settings.interrupt_messages)
                 Settings.simulate_typing(colored(random_msg, "red"))
+                return self.exit_chat()
             except Exception as e:
                 logging.exception("Failed to get username")
-                print("""Sorry, we encountered an issue
-                      getting your username.
-                      Please try again.""")
+                print(
+                    """Sorry, we encountered an issue
+                        getting your username.
+                        Please try again.""")
 
     def is_valid_username(self, username):
         # Define the allowed pattern for the usernames,
@@ -150,6 +159,7 @@ class Main:
         except KeyboardInterrupt as e:
             random_msg = random.choice(Settings.interrupt_messages)
             Settings.simulate_typing(colored(random_msg, "red"))
+            return self.exit_chat()
         except Exception as e:
             logging.exception(f"Failed to get user data for {username}")
             print(f"""Sorry, we couldn't retrieve your data, {username}.
@@ -174,6 +184,7 @@ class Main:
             except KeyboardInterrupt as e:
                 random_msg = random.choice(Settings.interrupt_messages)
                 Settings.simulate_typing(colored(random_msg, "red"))
+                return self.exit_chat()
             except Exception as e:
                 logging.exception("Failed to get user input")
                 attempts += 1
@@ -192,6 +203,7 @@ class Main:
         except KeyboardInterrupt as e:
             random_msg = random.choice(Settings.interrupt_messages)
             Settings.simulate_typing(colored(random_msg, "red"))
+            return self.exit_chat()
         except Exception as e:
             logging.exception("Failed to generate response")
             print("""Sorry, I couldn't understand that.
@@ -210,6 +222,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt as e:
         random_msg = random.choice(Settings.interrupt_messages)
         Settings.simulate_typing(colored(random_msg, "red"))
+        main_instance.exit_chat()
     except Exception as e:
         logging.exception("""An error occurred in the
                           main execution block.""")
