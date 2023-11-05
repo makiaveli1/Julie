@@ -66,8 +66,7 @@ class LongTermMemory:
             )
             self.redis_client.ping()
             logging.info(
-                f" Successfully connected to Redis at {
-                    self.redis_host}:{self.redis_port}."
+                f" Successfully connected to Redis at {self.redis_host}:{self.redis_port}."
             )
         except redis.ConnectionError as e:
             logging.error("Could not connect to Redis. Connection failed.")
