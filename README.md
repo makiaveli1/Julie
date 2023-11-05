@@ -58,10 +58,10 @@ Julie's functionality is powered by sophisticated AI algorithms that allow it to
 ![Startup Interface](Images/Startup.png)
 - **Interacting with Julie**: Users can engage in conversations with Julie, by selecting chat and either registering if they are new users or selecting returning user if they are one and then begin chat with the bot responding in a friendly and supportive manner.
 
-![Chat Interface](Images/CLI.png)
+![Chat Interface](Images/Chat.png)
 - **Navigating the Application**: The CLI menu allows users to choose between chatting, adjusting settings, getting help, or exiting the application.
 
-![Menu Interface](Images/Menu.png)
+![Menu Interface](Images/CLI.png)
 
 
 
