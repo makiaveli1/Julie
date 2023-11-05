@@ -90,8 +90,8 @@ class Main:
         self.chat(username)
 
     def exit_chat(self):
-        click.echo(click.style("""Julie: Nya~ Goodbye,
-                               senpai! See you next time! 🐾""",
+        click.echo(click.style(
+            """Julie: Nya~ Goodbye, senpai! See you next time! 🐾""",
                                fg="red"))
         return self.julie.exit_chat()
 
