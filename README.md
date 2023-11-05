@@ -40,7 +40,7 @@
 
 In the digital age, the advent of artificial intelligence  presents new avenues for providing help and guidance. Julie, a state-of-the-art chatbot, harnesses the power of OpenAI's GPT-4 to offer personal friendship and support through engaging conversations. Developed with the intent to bring joy and entertainment, Julie represents a leap forward in digital companionship. This project is not just about technology; it's about bringing empathy and support to users through every interaction.
 
-![Julie Chatbot Interface](Images\responsive-mockup.png)
+![Julie Chatbot Interface](Images/responsive-mockup.png)
 [Chat with Julie](https://julie-chan-e1e36ee87b66.herokuapp.com/)
 
 ## User Experience
@@ -216,7 +216,6 @@ Developing an AI-powered chatbot like Julie presented unique challenges. Here ar
 
 ### Natural Language Processing
 To improve Julie's understanding of natural language, we integrated GPT-4 and continuously trained the model with diverse datasets.
-
 
 
 ## Development Team
