@@ -98,8 +98,8 @@ class Main:
     def get_username(self, new_user=False):
         while True:
             try:
-                username_raw = click.prompt(click.style("""What's your
-                                                        username?""",
+                username_raw = click.prompt(click.style(
+                    """What's your username?""",
                                             fg="blue")).strip()
                 # Normalize the username
                 normalized_username = username_raw.lower()
