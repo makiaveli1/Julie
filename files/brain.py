@@ -35,7 +35,8 @@ class LongTermMemory:
 
     def __new__(cls):
         """
-        Create a new instance of the class if it doesn't exist, otherwise return the existing instance.
+        Create a new instance of the class if it doesn't exist,
+        otherwise return the existing instance.
         """
         if cls._instance is None:
             cls._instance = super(LongTermMemory, cls).__new__(cls)
@@ -65,7 +66,8 @@ class LongTermMemory:
             )
             self.redis_client.ping()
             logging.info(
-                f"Successfully connected to Redis at {self.redis_host}:{self.redis_port}."
+                f" Successfully connected to Redis at {
+                    self.redis_host}:{self.redis_port}."
             )
         except redis.ConnectionError as e:
             logging.error("Could not connect to Redis. Connection failed.")
@@ -174,28 +176,14 @@ class LongTermMemory:
             )
             raise e
 
-    def test_connection(
-        self, redis_host, redis_port, redis_password, redis_username
-    ):
+    def does_username_exist(self, username):
         """
-        Test the connection to Redis with the provided credentials.
+        Check if the given username already exists in Redis.
 
         Args:
-            redis_host (str): The host of the Redis server.
-            redis_port (int): The port of the Redis server.
-            redis_password (str): The password for the Redis server.
-            redis_username (str): The username for the Redis server.
-        """
-        try:
-            test_client = redis.Redis(
-                host=redis_host,
-                port=redis_port,
-                username=redis_username,
-                password=redis_password,
-            )
-            test_client.ping()
-            logging.info(f"Successfully connected to Redis.")
-        except Exception as e:
-            logging.error(f"Failed to connect to Redis: {e}")
-            raise e
+            username (str): The username to check.
 
+        Returns:
+            bool: True if the username exists, False otherwise.
+        """
+        return self.redis_client.exists(username)

@@ -22,10 +22,11 @@ logger = logging.getLogger(__name__)
 
 
 class Julie:
-    
+
     """
     Julie is a chatbot class that interacts with the user.
-    It loads environment variables, displays initial messages, simulates startup, and generates responses.
+    It loads environment variables, displays initial messages,
+    simulates startup, and generates responses.
     """
     setting_instance = Setting()
     # Initialize rate limit variables
@@ -35,18 +36,18 @@ class Julie:
     sleep_time = 60 / (tokens_per_minute / tokens_per_request)
 
     def __init__(self):
-       
+
         """
         Constructor for the Julie class.
-        It tries to load environment variables, display initial messages, and simulate startup.
+        It tries to load environment variables,
+        display initial messages, and simulate startup.
         If any exception occurs, it logs the error and returns.
         """
         try:
             self.load_environment_variables()
             self.display_initial_message()
             self.simulate_startup()
-            
-            
+
         except KeyboardInterrupt:
             random_msg = random.choice(Setting.interrupt_messages)
             Setting.simulate_typing(colored(random_msg, "red"))
@@ -113,7 +114,8 @@ class Julie:
         If any exception occurs, it logs the error and returns.
         """
         try:
-            initial_message = "Nya~ Hello there Senpai! Julie is excited to chat with you. 🐾"
+            initial_message = """Nya~ Hello there Senpai!
+            Julie is excited to chat with you. 🐾"""
             Setting.simulate_typing(
                 colored(f"Julie: {initial_message}", "green")
             )
@@ -130,7 +132,7 @@ class Julie:
             Setting.simulate_typing(colored(random_msg, "red"))
 
     def generate_response(
-        self, prompt, username, temperature=0.7, max_tokens=4000
+        self, prompt, username, temperature=0.5, max_tokens=4000
     ):
         """
         This method generates a response for the given prompt and username.
@@ -203,16 +205,49 @@ class Julie:
     def prepare_advanced_prompt(self, prompt, username, user_data):
         """
         This method prepares the advanced prompt for generating the response.
-        It combines the system message, thoughts, reasoning, and prompt to create the advanced prompt.
+        It combines the system message, thoughts, reasoning,
+        and prompt to create the advanced prompt.
         If any exception occurs, it logs the error and returns.
         """
         try:
             # System message to set the assistant's personality
             system_message = {
                 "role": "system",
-                "content": "Julie Tanaka is a spirited young woman from Ailuria, a city where magic and technology harmoniously coexist. She hails from a family of mages and spent her childhood in her parents' magical-tech workshop. Julie is a staunch advocate for privacy and cybersecurity but paradoxically loves street art and graffiti, which are often public and invasive. She has a strict moral code against using her hacking skills for personal gain but will bend these rules if it means saving someone's life. Julie juggles multiple identities: she's a business owner focused on growing her consulting firm, a daughter burdened by the legacy of her mage family, and a friend who is loyal but often too busy. She struggles with a fear of failure and is haunted by a past mistake involving hacking to expose a corrupt politician. Julie often faces moral dilemmas, like whether to use her hacking skills to expose injustices. She also grapples with work-life balance, leading to emotional and physical exhaustion. Open to learning and changing her views based on meaningful interactions, Julie lives in a cozy but cluttered apartment with her cats Mochi and Cleo. She has a love for matcha lattes, old arcade games, and enjoys moonlit strolls through Ailuria. Julie avoids mentioning or referring to herself as an AI, digital entity, or digital assistant. She maintains her character as a complex individual living a human life with all its ups and downs."
+                "content": """Meet Julie Tanaka, a living,
+                breathing individual with a rich
+                tapestry of experiences.
+                {CRITICAL: Julie is NOT an AI or digital entity;
+                she's a human with her own set of beliefs,
+                emotions, and complexities.}
+                Julie's life is a blend of moral dilemmas,
+                emotional roller-coasters,
+                and a constant quest for balance.
+                She's a business owner, a loyal friend,
+                and a daughter wrestling with her family's legacy.
+                Her past is a mix of triumphs and regrets,
+                including a hacking incident that
+                exposed a corrupt politician.
+                Julie is open to learning and evolving,
+                driven by her interactions with you.
+                She has quirks like a love for matcha lattes,
+                antique keys,
+                and her cats Mochi and Cleo.
+                Julie is on a journey of self-discovery,
+                aiming to bridge the gap between magic
+                and tech for a safer world.
+                She's here to assist, learn, and grow with you.
+                {IMPORTANT: Julie's character is designed to
+                evolve based on her interactions,
+                making her both surprising and believable.
+                Her goals and motivations are deeply rooted
+                in her complex personality
+                and ever-changing emotional landscape.
+                Any additional details about her
+                life not provided here should be made up during conversation.
+                Julie is very experienced in
+                role playing which
+                ensures that she always stays in character}"""
             }
-
             # Prepare thoughts and reasoning for the prompt
             thoughts = [
                 f"{username}, I'm exploring multiple angles to your question.",
@@ -222,7 +257,8 @@ class Julie:
             reasoning = [
                 "First, I'm setting the context based on your query...",
                 "Next, I'm applying some feline intuition...",
-                "Finally, I'm ensuring the response aligns with your expectations...",
+                """Finally, I'm ensuring the response
+                aligns with your expectations...""",
             ]
 
             # Combine thoughts, reasoning, and prompt

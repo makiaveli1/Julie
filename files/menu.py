@@ -1,4 +1,3 @@
-
 import click
 import os
 import shutil
@@ -8,24 +7,31 @@ from termcolor import colored
 from files.setup import Setting
 import random
 
+
 def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
+
 
 def center_text(text):
     terminal_width = shutil.get_terminal_size().columns
     centered_text = text.center(terminal_width)
     return centered_text
 
+
 def display_menu_content(content):
     for title, description in content.items():
         print(center_text(f"\n🌟 {title} 🌟"))
-        print(center_text("--------------------------------------------------"))
+        print(center_text("""-------------------------
+                          -------------------------"""))
         for line in description:
             print(center_text(line))
 
+
 def display_help_menu():
     """
-    Displays the help menu with a brief introduction about Julie and the guidelines for interacting with the main menu.
+    Displays the help menu with a brief introduction
+    about Julie and
+    the guidelines for interacting with the main menu.
     """
     terminal_width = 80  # As per your settings
 
@@ -42,14 +48,22 @@ def display_help_menu():
 
     content = {
         "WHO IS JULIE?": [
-            "🌈 Greetings, I am Julie, your spirited and playful catgirl from the bustling city of Ailuria!",
-            "🎮 I was once a renowned hacker, but a twist of fate led me to you.",
-            "🌙 Now, I use my tech-savvy skills and magical abilities to assist and enchant!",
-            "I love matcha lattes, retro video games, and moonlit walks. 🌙",
+            """🌈 Greetings, I am Julie,
+            your spirited and playful catgirl
+            from the bustling city of Ailuria!""",
+            """🎮 I was once a renowned hacker,
+            but a twist of fate led me to you.""",
+            """🌙 Now, I use my tech-savvy skills and
+            magical abilities to assist and enchant!""",
+            """I love matcha lattes, retro video games,
+            and moonlit walks. 🌙"""
         ],
         "WHAT CAN I DO?": [
-            "From playful banter to deep discussions, I aim to make every interaction enchanting!",
-            "Don't be shy; whether it's advice you seek or just a chat, I've got your back! 🎮",
+            """From playful banter to deep discussions,
+            I aim to make every interaction enchanting!""",
+            """Don't be shy;
+            whether it's advice you seek or just a chat,
+            I've got your back! 🎮""",
         ],
         "HOW TO INTERACT WITH ME?": [
             "1️⃣ Introduce Yourself: Let's get to know each other better!",
@@ -57,7 +71,9 @@ def display_help_menu():
             "3️⃣ Chat: Share your thoughts; I'm all ears!",
         ],
         "MY MEMORY": [
-            "I have a Long-Term Memory system, making our conversations even more personalized and engaging."
+            """I have a Long-Term Memory system,
+            making our conversations
+            even more personalized and engaging."""
         ],
         "GUIDELINES FOR INTERACTING WITH THE MAIN MENU": [
             "🔹 Navigation: Use arrow keys or type the option number.",
@@ -67,10 +83,9 @@ def display_help_menu():
         ],
     }
 
-
     for title, description in content.items():
         # Center-align each title
-        padding = (terminal_width - len(title) - 4) // 2  # 4 is for the 🌟 emojis
+        padding = (terminal_width - len(title) - 4) // 2
         print("\n" + " " * padding + f"🌟 {title} 🌟")
 
         # Center-align the separator line
@@ -119,6 +134,7 @@ def settings_menu():
         print("Text color changed successfully!")
     clear_screen()
 
+
 def main_menu(Main_instance):
     clear_screen()  # Clear screen before displaying main menu
     option = prompt(
@@ -133,9 +149,23 @@ def main_menu(Main_instance):
     ).get("option")
 
     if option == "Chat":
-        username = Main_instance.get_username()
-        if username:
-            Main_instance.chat(username)
+        user_type = prompt(
+            [
+                {
+                    "type": "list",
+                    "message": "Are you a new or returning user?",
+                    "choices": ["New User", "Returning User"],
+                    "name": "user_type",
+                }
+            ]
+        ).get("user_type")
+
+        if user_type == "Returning User":
+            username = Main_instance.get_username()
+            if username:
+                Main_instance.chat(username)
+        elif user_type == "New User":
+            Main_instance.register_new_user()
     elif option == "Settings":
         settings_menu()
         return main_menu(Main_instance)
@@ -145,7 +175,3 @@ def main_menu(Main_instance):
     elif option == "Exit":
         clear_screen()
         exit()
-
-
-
-
