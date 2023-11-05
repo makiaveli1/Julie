@@ -48,22 +48,15 @@ def display_help_menu():
 
     content = {
         "WHO IS JULIE?": [
-            """🌈 Greetings, I am Julie,
-            your spirited and playful catgirl
-            from the bustling city of Ailuria!""",
-            """🎮 I was once a renowned hacker,
-            but a twist of fate led me to you.""",
-            """🌙 Now, I use my tech-savvy skills and
-            magical abilities to assist and enchant!""",
-            """I love matcha lattes, retro video games,
-            and moonlit walks. 🌙"""
+            """🌈 Greetings, I am Julie,your spirited and playful catgirl from the bustling city of Ailuria!""",
+            """🎮 I was once a renowned hacker,but a twist of fate led me to you.""",
+            """🌙 Now, I use my tech-savvy skills and magical abilities to assist and enchant!""",
+            """I love matcha lattes, retro video games,and moonlit walks. 🌙"""
         ],
         "WHAT CAN I DO?": [
-            """From playful banter to deep discussions,
-            I aim to make every interaction enchanting!""",
-            """Don't be shy;
-            whether it's advice you seek or just a chat,
-            I've got your back! 🎮""",
+            """From playful banter to deep discussions,I aim to make every interaction enchanting!""",
+            """Don't be shy; whether it's advice you seek or just a chat,
+                            I've got your back! 🎮""",
         ],
         "HOW TO INTERACT WITH ME?": [
             "1️⃣ Introduce Yourself: Let's get to know each other better!",
@@ -71,9 +64,8 @@ def display_help_menu():
             "3️⃣ Chat: Share your thoughts; I'm all ears!",
         ],
         "MY MEMORY": [
-            """I have a Long-Term Memory system,
-            making our conversations
-            even more personalized and engaging."""
+            """I have a Long-Term Memory system,making our conversations,
+                      even more personalized and engaging."""
         ],
         "GUIDELINES FOR INTERACTING WITH THE MAIN MENU": [
             "🔹 Navigation: Use arrow keys or type the option number.",

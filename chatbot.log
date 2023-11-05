@@ -78,3 +78,7 @@
 2023-11-05 13:46:29,190 INFO root Added message to conversation history for temi
 2023-11-05 13:46:29,202 INFO root Trimmed conversation history for temi
 2023-11-05 13:46:29,215 INFO root Saved user data for temi
+2023-11-05 16:14:30,738 INFO root  Successfully connected to Redis at redis-15567.c226.eu-west-1-3.ec2.cloud.redislabs.com:15567.
+2023-11-05 16:14:30,837 INFO root  Successfully connected to Redis at redis-15567.c226.eu-west-1-3.ec2.cloud.redislabs.com:15567.
+2023-11-05 16:14:30,919 INFO root  Successfully connected to Redis at redis-15567.c226.eu-west-1-3.ec2.cloud.redislabs.com:15567.
+2023-11-05 16:14:45,299 DEBUG asyncio Using selector: EpollSelector
