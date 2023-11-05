@@ -1,6 +1,41 @@
 
 # Julie the Neko Chatbot
 
+## Table of Contents
+- [Julie the Neko Chatbot](#julie-the-neko-chatbot)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [User Experience](#user-experience)
+  - [User Interface](#user-interface)
+  - [Mechanism Behind Julie](#mechanism-behind-julie)
+  - [User Journey](#user-journey)
+  - [Project Structure](#project-structure)
+    - [Python Files](#python-files)
+    - [HTML Files](#html-files)
+  - [Deployment on Heroku](#deployment-on-heroku)
+  - [Usage](#usage)
+  - [Contributing](#contributing)
+  - [PEP8 Compliance](#pep8-compliance)
+  - [User Guide for Julie: Your Chatbot Companion](#user-guide-for-julie-your-chatbot-companion)
+    - [Who is Julie?](#who-is-julie)
+    - [What Can Julie Do?](#what-can-julie-do)
+    - [How to Interact with Julie?](#how-to-interact-with-julie)
+    - [Julie's Memory](#julies-memory)
+    - [Navigating the Main Menu](#navigating-the-main-menu)
+  - [Technical Architecture](#technical-architecture)
+    - [Core Components](#core-components)
+  - [Future Roadmap](#future-roadmap)
+    - [Upcoming Features](#upcoming-features)
+  - [Contributing Guide](#contributing-guide)
+    - [Ways to Contribute](#ways-to-contribute)
+  - [Use Cases](#use-cases)
+  - [Frequently Asked Questions (FAQs)](#frequently-asked-questions-faqs)
+  - [Acknowledgments](#acknowledgments)
+  - [Technical Challenges and Solutions](#technical-challenges-and-solutions)
+    - [Natural Language Processing](#natural-language-processing)
+  - [Development Team](#development-team)
+
+
 ## Introduction
 
 In the digital age, the advent of artificial intelligence  presents new avenues for providing help and guidance. Julie, a state-of-the-art chatbot, harnesses the power of OpenAI's GPT-4 to offer personal friendship and support through engaging conversations. Developed with the intent to bring joy and entertainment, Julie represents a leap forward in digital companionship. This project is not just about technology; it's about bringing empathy and support to users through every interaction.
@@ -20,13 +55,13 @@ Julie's functionality is powered by sophisticated AI algorithms that allow it to
 ## User Journey
 - **Starting Up**: Users are welcomed through a beautiful startup screen animation.
 
-![User Interface]()
+![Startup Interface](Images/Startup.png)
 - **Interacting with Julie**: Users can engage in conversations with Julie, by selecting chat and either registering if they are new users or selecting returning user if they are one and then begin chat with the bot responding in a friendly and supportive manner.
 
-![Chat Interface]()
+![Chat Interface](Images/Chat.png)
 - **Navigating the Application**: The CLI menu allows users to choose between chatting, adjusting settings, getting help, or exiting the application.
 
-![Menu Interface]()
+![Menu Interface](Images/Menu.png)
 
 
 
