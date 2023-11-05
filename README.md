@@ -58,7 +58,7 @@ Julie's functionality is powered by sophisticated AI algorithms that allow it to
 ![Startup Interface](Images/Startup.png)
 - **Interacting with Julie**: Users can engage in conversations with Julie, by selecting chat and either registering if they are new users or selecting returning user if they are one and then begin chat with the bot responding in a friendly and supportive manner.
 
-![Chat Interface](Images/Chat.png)
+![Chat Interface](Images/CLI.png)
 - **Navigating the Application**: The CLI menu allows users to choose between chatting, adjusting settings, getting help, or exiting the application.
 
 ![Menu Interface](Images/Menu.png)
@@ -78,8 +78,6 @@ Julie's functionality is powered by sophisticated AI algorithms that allow it to
 - `julie.py`: At the core lies Julie, powered by GPT-4, capable of understanding nuances and emotions in user queries. This module is where the magic happens—transforming algorithms and data into meaningful conversations.
 
 - `menu.py`: A gateway for users, offering a clear path through the application's features. It simplifies the experience, allowing users to focus on the conversation rather than the complexity of the underlying technology.
-
-![CLI Menu Screenshot](Images/CLI.png)
 
 - `setup.py`: This file lays the foundation for Julie to operate in various environments. It handles configurations that tailor the chatbot to individual user preferences, ensuring a personalized experience from the very first command.
 
